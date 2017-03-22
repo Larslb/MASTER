@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView android:id="@+id/name2"
+        android:text="SurName"
+        android:textColor="@android:color/white"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:textSize="20dp"
+        />
+    <TextView android:id="@+id/name1"
+        android:textColor="@android:color/white"
+        android:text="FirstName"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent">
+
+    </TextView>
+
+</LinearLayout>

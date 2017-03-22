@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    >
+
+    <item android:id="@+id/Force"
+        android:title="@string/Force"
+        />
+
+    <item android:id="@+id/ACC"
+        android:title="@string/Acc" />
+
+    <item android:id="@+id/Gyro"
+        android:title="@string/Gyro" />
+
+    <item android:id="@+id/Save"
+        android:title="@string/save_data" />
+
+</menu>

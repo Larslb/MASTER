@@ -146,7 +146,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
             pThread.interrupt();
         }
 
-        notifyAllCharacteristics(false);
 
 
     }
@@ -155,6 +154,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         super.onResume();
         if (!mNotify){
             notifyAllCharacteristics(true);
+            mNotify = true;
         }
         pThread.start();
     }
@@ -299,8 +299,11 @@ public class DeviceManagerActivity extends AppCompatActivity {
                     mNotifyCharacteristics.add(characteristic);
                 }
             }
-            notifyAllCharacteristics(true);
-            mNotify = true;
+            if (!mNotify){
+                notifyAllCharacteristics(true);
+                mNotify = true;
+            }
+
         }
     }
 
@@ -380,7 +383,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
                 }
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.ACC_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,14);
-                Log.d(TAG,"ACC Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
+                //Log.d(TAG,"ACC Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
                 ArrayList<Integer> array = accGyroBytearray2intarray(measurement);
                 compactQueueData = ACCELEROMETER + ":" + array.toString();
                 for (int i=0;i<array.size();i++){
@@ -388,7 +391,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
                 }
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.GYRO_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,14);
-                Log.d(TAG,"Gyro Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
+                //Log.d(TAG,"Gyro Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
                 ArrayList<Integer> array = accGyroBytearray2intarray(measurement);
                 compactQueueData = GYROSCOPE + ":" + array.toString();
                 for (int i=0;i<array.size();i++){
@@ -422,10 +425,10 @@ public class DeviceManagerActivity extends AppCompatActivity {
         for (int i=0;i<=barray.length-1;i+=7) {
 
             System.out.println(barray.toString());
-            Log.d(TAG, "x uint16 byte:       ---         " + convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
+            /*Log.d(TAG, "x uint16 byte:       ---         " + convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
             Log.d(TAG, "y uint16 byte:       ---         " + convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
             Log.d(TAG, "z uint16 byte:       ---         " + convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
-
+            */
             intarray.add(convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
             intarray.add(convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
             intarray.add(convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));

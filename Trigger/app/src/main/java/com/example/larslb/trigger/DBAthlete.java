@@ -20,7 +20,7 @@ import com.example.larslb.trigger.AthleteData;
 public class DBAthlete extends SQLiteOpenHelper {
     public static final String TAG = DBAthlete.class.getSimpleName();
 
-    public static final int DATABASE_VERSION = 7;
+    public static final int DATABASE_VERSION = 8;
     public static final String DATABASE_NAME = "AthletesData.db";
     private static final String SQL_CREATE_ENTRIES = "CREATE TABLE " + AthleteData.AthleteDataEntry.TABLE_NAME + " (" +
             AthleteData.AthleteDataEntry._ID + " INTEGER PRIMARY KEY, " +
@@ -49,7 +49,7 @@ public class DBAthlete extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
         Log.d(TAG,"onUpgrade!");
-        if (oldVersion < 6){
+        if (oldVersion < 10){
             db.execSQL(SQL_DELETE_ENTRIES);
 
             onCreate(db);
@@ -72,7 +72,7 @@ public class DBAthlete extends SQLiteOpenHelper {
         contentValues.put(AthleteData.AthleteDataEntry.COLUMN_NAME,firstName);
         contentValues.put(AthleteData.AthleteDataEntry.COLUMN_SURNAME,surName);
         String fullName = firstName + surName;
-        //contentValues.put(AthleteData.AthleteDataEntry.FULL_NAME,fullName);
+        contentValues.put(AthleteData.AthleteDataEntry.FULL_NAME,fullName);
         Log.d(TAG,"ContentValues: " + contentValues.toString());
         Log.d(TAG,"DB version: " + db.getVersion());
         long val =  db.insert(AthleteData.AthleteDataEntry.TABLE_NAME,null, contentValues);
@@ -81,31 +81,59 @@ public class DBAthlete extends SQLiteOpenHelper {
 
     }
 
-    public boolean contains(String fullName){
+    public int deleteAthlete(String fullname){
+        SQLiteDatabase db = this.getWritableDatabase();
+        int id = db.delete(AthleteData.AthleteDataEntry.TABLE_NAME,AthleteData.AthleteDataEntry.FULL_NAME + " = " + fullname,null);
+        db.close();
+        return id;
+
+    }
+
+    public String printTable(){
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT * FROM " + AthleteData.AthleteDataEntry.TABLE_NAME,null);
-        Log.d(TAG,"Cursor: " + cursor.toString());
-        return true;
+        String tableString = String.format("Table %s:\n",AthleteData.AthleteDataEntry.TABLE_NAME);
+        Log.d(TAG,"Database need upgrade?   " + db.needUpgrade(7));
+        Log.d(TAG,"Database in string:  " + db.toString());
+
+        while (cursor.moveToNext()){
+            String[] columnNames = cursor.getColumnNames();
+            for (String name : columnNames){
+                Log.d(TAG,"Column : " + name + "    Data: " + cursor.getString(cursor.getColumnIndex(name)));
+                tableString += String.format("%s: %s\n", name, cursor.getString(cursor.getColumnIndex(name)));
+            }
+            tableString += "\n";
+        }
+        db.close();
+        return tableString;
+    }
+
+    public boolean contains(String fullName){
+        SQLiteDatabase db = this.getReadableDatabase();
+        String query = "SELECT * FROM " + AthleteData.AthleteDataEntry.TABLE_NAME + " WHERE " + AthleteData.AthleteDataEntry.FULL_NAME + " = '" + fullName + "'";
+        Cursor c = db.rawQuery(query,null);
+        db.close();
+        return c.moveToFirst();
     }
 
     public long addToExistingAthlete(String firstName, String surName, String ForceData, String ForceTimeData, String ACCData, String GyroData, String ACCGyroTimeData){
         SQLiteDatabase db = this.getWritableDatabase();
+        long id = getRowId(firstName,surName);
         ContentValues contentValues = new ContentValues();
-        contentValues.put(AthleteData.AthleteDataEntry.COLUMN_NAME,firstName);
-        contentValues.put(AthleteData.AthleteDataEntry.COLUMN_SURNAME,surName);
         contentValues.put(AthleteData.AthleteDataEntry.FORCE,ForceData);
         contentValues.put(AthleteData.AthleteDataEntry.FORCETIME,ForceTimeData);
         contentValues.put(AthleteData.AthleteDataEntry.ACCELORMETER,ACCData);
         contentValues.put(AthleteData.AthleteDataEntry.GYROSCOPE,GyroData);
         contentValues.put(AthleteData.AthleteDataEntry.ACCGYROTIME,ACCGyroTimeData);
         Log.d(TAG,"ContentValues: " + contentValues.toString());
-        long val =  db.insert(AthleteData.AthleteDataEntry.TABLE_NAME,null, contentValues);
+        Log.d(TAG,"added to row id: " + id);
+        long val =  db.update(AthleteData.AthleteDataEntry.TABLE_NAME,contentValues, "_id=" + id,null);
         db.close();
         return val;
     }
 
     public long getRowId(String firstName, String LastName){
-        String query = "SELECT rowid FROM " + AthleteData.AthleteDataEntry.TABLE_NAME + " WHERE " + AthleteData.AthleteDataEntry.FULL_NAME + " = '" + firstName+LastName + "'";
+        String query = "SELECT _id FROM " + AthleteData.AthleteDataEntry.TABLE_NAME + " WHERE " + AthleteData.AthleteDataEntry.FULL_NAME + " = " + firstName+LastName + "";
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor res = db.rawQuery(query,null);
         long id = res.getLong(res.getColumnIndex("_id"));
@@ -113,24 +141,10 @@ public class DBAthlete extends SQLiteOpenHelper {
         return id;
     }
 
-    public Cursor getData(String name){
+    public Cursor getDataFromId(Long id){
+        String query = "SELECT * FROM " + AthleteData.AthleteDataEntry.TABLE_NAME + " WHERE " + AthleteData.AthleteDataEntry._ID + " = " + id;
         SQLiteDatabase db = this.getReadableDatabase();
-        String[] returnTemplate = {
-                AthleteData.AthleteDataEntry._ID,
-                AthleteData.AthleteDataEntry.COLUMN_NAME,
-                AthleteData.AthleteDataEntry.COLUMN_SURNAME,
-                AthleteData.AthleteDataEntry.FORCE,
-                AthleteData.AthleteDataEntry.ACCELORMETER,
-                AthleteData.AthleteDataEntry.GYROSCOPE,
-                AthleteData.AthleteDataEntry.FORCETIME,
-                AthleteData.AthleteDataEntry.ACCGYROTIME
-        };
-
-        String selection = AthleteData.AthleteDataEntry.COLUMN_NAME + " = ?";
-        String[] selectionArgs = {name};
-        String sortOrder = AthleteData.AthleteDataEntry.COLUMN_SURNAME + "DESC";
-
-        return db.query(AthleteData.AthleteDataEntry.TABLE_NAME,returnTemplate,selection,selectionArgs,null,null,sortOrder);
+        return db.rawQuery(query,null);
     }
 
 
@@ -138,7 +152,7 @@ public class DBAthlete extends SQLiteOpenHelper {
         ArrayList<HashMap<String,String>> athleteList = new ArrayList<>();
 
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor res = db.rawQuery("select * from " + AthleteData.AthleteDataEntry.TABLE_NAME,null);
+        Cursor res = db.rawQuery("SELECT * FROM " + AthleteData.AthleteDataEntry.TABLE_NAME,null);
         res.moveToFirst();
 
         Log.d(TAG,"DB version: " + db.getVersion());

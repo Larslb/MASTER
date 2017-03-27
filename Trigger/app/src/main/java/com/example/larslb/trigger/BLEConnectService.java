@@ -38,15 +38,15 @@ public class BLEConnectService extends Service {
     private static final int STATE_CONNECTED = 2;
 
     public final static String ACTION_GATT_CONNECTED =
-            "com.example.larslb.triggertest.ACTION_GATT_CONNECTED";
+            "ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
-            "com.example.larslb.triggertest.ACTION_GATT_DISCONNECTED";
+            "ACTION_GATT_DISCONNECTED";
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
-            "com.example.larslb.triggertest.ACTION_GATT_SERVICES_DISCOVERED";
+            "ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE =
-            "com.example.larslb.triggertest.ACTION_DATA_AVAILABLE";
+            "ACTION_DATA_AVAILABLE";
     public final static String SERVICE_DATA =
-            "com.example.larslb.triggertest.SERVICE_DATA";
+            "SERVICE_DATA";
     public final static String CHARACTERISTIC = "CHARACTERISTIC";
 
 
@@ -96,6 +96,17 @@ public class BLEConnectService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
             broadCastUpdate(ACTION_DATA_AVAILABLE,characteristic);
+
+            StringBuilder stringBuilder = new StringBuilder();
+            Log.d(TAG,"Characteristic Test : " + characteristic.getUuid().toString() + " -- " + DeviceServices.GYRO_ATTRIBUTE);
+            if (characteristic.getUuid().toString().equals(DeviceServices.GYRO_ATTRIBUTE)){
+                for (byte b : characteristic.getValue()){
+                    stringBuilder.append((b & 0xFF));
+                    stringBuilder.append(",");
+                }
+                Log.d(TAG,"Gyro         ---         " + stringBuilder.toString());
+
+            }
         }
 
         @Override

@@ -18,7 +18,7 @@ import java.util.List;
 public class DBHelper extends SQLiteOpenHelper {
     private static final String TAG = DBHelper.class.getSimpleName();
 
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     private static final String DATABASE_NAME = "triggerdb";
 
     private static final String CREATE_TABLE_ATHLETES = "CREATE TABLE " + AthleteData.TABLE_NAME + "(" +
@@ -33,6 +33,7 @@ public class DBHelper extends SQLiteOpenHelper {
             ShootingData.COLUM_DATE + " DATETIME, " +
             ShootingData.COLUMN_NUMBER_SHOOTINGS + " INTEGER, " +
             ShootingData.COLUMN_FILENAME + " TEXT, " +
+            ShootingData.COLUMN_SHOOTINGDESCRIPTION + " TEXT, " +
             ShootingData.COLUMN_ATHLETEID + " INTEGER, " +
             "FOREIGN KEY(" +ShootingData.COLUMN_ATHLETEID +  ") REFERENCES " + AthleteData.TABLE_NAME + "(" +
             AthleteData.COLUMN_ID + "));";
@@ -57,8 +58,9 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion){
-        db.execSQL("DROP TABLE IF EXISTS " + AthleteData.TABLE_NAME);
         db.execSQL("DROP TABLE IF EXISTS " + ShootingData.TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + AthleteData.TABLE_NAME);
+
 
         onCreate(db);
 
@@ -158,7 +160,6 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public void deleteAthlete(long athleteId) {
-        SQLiteDatabase db = this.getWritableDatabase();
         String selectShootingsQuery = "SELECT * FROM " + ShootingData.TABLE_NAME + " WHERE " + ShootingData.COLUMN_ATHLETEID +
                 " = " + athleteId;
 
@@ -167,6 +168,8 @@ public class DBHelper extends SQLiteOpenHelper {
         for (ShootingData data : shootingdata){
             deleteShooting(data.getId());
         }
+
+        SQLiteDatabase db = this.getWritableDatabase();
 
         db.delete(AthleteData.TABLE_NAME,AthleteData.COLUMN_ID + " = ?", new String[] {String.valueOf(athleteId)});
         db.close();
@@ -195,6 +198,7 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(ShootingData.COLUM_DATE,shootingData.getDate());
         values.put(ShootingData.COLUMN_NUMBER_SHOOTINGS,shootingData.getNumberOfShootings());
         values.put(ShootingData.COLUMN_FILENAME,shootingData.getFilename());
+        values.put(ShootingData.COLUMN_SHOOTINGDESCRIPTION,shootingData.getShootingDescriptor());
         values.put(ShootingData.COLUMN_ATHLETEID,athletedataId);
         int id = (int) db.insert(ShootingData.TABLE_NAME,null,values);
         db.close();
@@ -220,6 +224,7 @@ public class DBHelper extends SQLiteOpenHelper {
         shootingData.setDate(cursor.getString(cursor.getColumnIndex(ShootingData.COLUM_DATE)));
         shootingData.setNumberOfShootings(cursor.getInt(cursor.getColumnIndex(ShootingData.COLUMN_NUMBER_SHOOTINGS)));
         shootingData.setFilename(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_FILENAME)));
+        shootingData.setShootingDescriptor(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_SHOOTINGDESCRIPTION)));
         db.close();
         return shootingData;
     }
@@ -239,6 +244,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 data.set_id(cursor.getInt(cursor.getColumnIndex(ShootingData.COLUMN_ID)));
                 data.setDate(cursor.getString(cursor.getColumnIndex(ShootingData.COLUM_DATE)));
                 data.setFilename(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_FILENAME)));
+                data.setShootingDescriptor(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_SHOOTINGDESCRIPTION)));
                 data.setNumberOfShootings(cursor.getInt(cursor.getColumnIndex(ShootingData.COLUMN_NUMBER_SHOOTINGS)));
 
                 shootings.add(data);
@@ -264,6 +270,7 @@ public class DBHelper extends SQLiteOpenHelper {
                 sd.set_id(cursor.getInt(cursor.getColumnIndex(ShootingData.COLUMN_ID)));
                 sd.setDate(cursor.getString(cursor.getColumnIndex(ShootingData.COLUM_DATE)));
                 sd.setFilename(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_FILENAME)));
+                sd.setShootingDescriptor(cursor.getString(cursor.getColumnIndex(ShootingData.COLUMN_SHOOTINGDESCRIPTION)));
                 sd.setNumberOfShootings(cursor.getInt(cursor.getColumnIndex(ShootingData.COLUMN_NUMBER_SHOOTINGS)));
 
                 shootingDataList.add(sd);
@@ -277,6 +284,11 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         db.delete(ShootingData.TABLE_NAME, ShootingData.COLUMN_ID + " = ?" ,new String[]{String.valueOf(shooting_id)});
         db.close();
+    }
+
+    public void deleteAllShootings(long shooting_id){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.delete(ShootingData.TABLE_NAME,null,null);
     }
 
 

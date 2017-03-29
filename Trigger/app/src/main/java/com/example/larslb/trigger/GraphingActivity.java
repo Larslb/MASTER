@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -52,6 +54,7 @@ import android.widget.ViewFlipper;
 
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -73,6 +76,8 @@ public class GraphingActivity extends AppCompatActivity {
     String mAthleteSurName;
     TextView mTextAthleteFirstName;
     TextView mTextAthleteSurName;
+    EditText mDescriptorText;
+    Button mSaveButton;
     ArrayList<ShootingData> mShootings;
 
     ViewFlipper mFlipper;
@@ -119,6 +124,15 @@ public class GraphingActivity extends AppCompatActivity {
         mTextAthleteFirstName.setText(mAthleteFirstName);
         mTextAthleteSurName = (TextView) findViewById(R.id.athleteLastName);
         mTextAthleteSurName.setText(mAthleteSurName);
+        mDescriptorText = (EditText) findViewById(R.id.descriptionText);
+        mSaveButton = (Button) findViewById(R.id.SaveButton);
+        mSaveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveToDataBase();
+            }
+        });
+
         mShootings = mDBAthlete.getAllShootings();
 
 
@@ -127,19 +141,18 @@ public class GraphingActivity extends AppCompatActivity {
         mAccGraph = (LineChart) findViewById(R.id.SingleAccGraph);
         mGyroGraph = (LineChart) findViewById(R.id.SingleGyroGraph);
 
-        CreateView(mForceGraph,300f,-10f);
-        CreateView(mAccGraph, 5000f,-5000f);
-        CreateView(mGyroGraph, 5000f,-5000f);
+        CreateView(mForceGraph,300f,-10f, "Force Measurement");
+        CreateView(mAccGraph, 33500f,-33500f, "Accelerometer Measurement");
+        CreateView(mGyroGraph, 33500f,-33500f, "Gyroscope Measurement");
         mShootingCounter ++;
 
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
-        Log.d(TAG,"OnCreateOptionsMenu!");
-        super.onCreateOptionsMenu(menu);
+        Log.d(TAG, "Enable Save mode:   " + mEnableSave);
         if (mEnableSave) getMenuInflater().inflate(R.menu.plottingmenu,menu);
         else getMenuInflater().inflate(R.menu.plottingmenu_without_save,menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -160,8 +173,7 @@ public class GraphingActivity extends AppCompatActivity {
                 break;
 
             case R.id.Save:
-                mFlipper.setDisplayedChild(0);
-                saveToDataBase();
+                mFlipper.setDisplayedChild(4);
                 break;
         }
 
@@ -196,6 +208,9 @@ public class GraphingActivity extends AppCompatActivity {
             forceData.add(new Entry(mForceTime.get(i),mForceDataList.get(i)));
         }
         LineDataSet set1 = new LineDataSet(forceData,"Force Measurement");
+        set1.setDrawValues(false);
+        set1.setDrawCircles(false);
+        set1.setDrawFilled(true);
         set1.setAxisDependency(YAxis.AxisDependency.LEFT);
         LineData data = new LineData(set1);
         mForceGraph.setData(data);
@@ -226,12 +241,18 @@ public class GraphingActivity extends AppCompatActivity {
             zAxisData.add(zEntry);
         }
         LineDataSet xDataset = new LineDataSet(xAxisData,"X-Axis");
+        xDataset.setDrawValues(false);
+        xDataset.setDrawCircles(false);
         xDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
         xDataset.setColor(Color.RED);
         LineDataSet yDataset = new LineDataSet(yAxisData,"Y-Axis");
+        yDataset.setDrawValues(false);
+        yDataset.setDrawCircles(false);
         yDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
         yDataset.setColor(Color.BLUE);
         LineDataSet zDataset = new LineDataSet(zAxisData,"Z-Axis");
+        zDataset.setDrawValues(false);
+        zDataset.setDrawCircles(false);
         zDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
         zDataset.setColor(Color.GREEN);
         List<ILineDataSet> dataSets = new ArrayList<>();
@@ -268,14 +289,20 @@ public class GraphingActivity extends AppCompatActivity {
             zAxisData.add(zEntry);
         }
         LineDataSet xDataset = new LineDataSet(xAxisData,"X-Axis");
-        xDataset.setColor(Color.RED);
+        xDataset.setDrawValues(false);
+        xDataset.setDrawCircles(false);
         xDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
+        xDataset.setColor(Color.RED);
         LineDataSet yDataset = new LineDataSet(yAxisData,"Y-Axis");
-        yDataset.setColor(Color.BLUE);
+        yDataset.setDrawValues(false);
+        yDataset.setDrawCircles(false);
         yDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
+        yDataset.setColor(Color.BLUE);
         LineDataSet zDataset = new LineDataSet(zAxisData,"Z-Axis");
-        zDataset.setColor(Color.GREEN);
+        zDataset.setDrawValues(false);
+        zDataset.setDrawCircles(false);
         zDataset.setAxisDependency(YAxis.AxisDependency.LEFT);
+        zDataset.setColor(Color.GREEN);
         List<ILineDataSet> dataSets = new ArrayList<>();
         dataSets.add(xDataset);
         dataSets.add(yDataset);
@@ -301,6 +328,7 @@ public class GraphingActivity extends AppCompatActivity {
         shooting.setNumberOfShootings(numberOfShootings());
         shooting.set_id(mShootings.size() + 1);
         shooting.setFilename(saveFile(jsonObject,stringDate));
+        shooting.setShootingDescriptor(mDescriptorText.getText().toString());
         shooting.setAthlete_id(mAthleteDataId);
         shooting.printShootingData();
         mDBAthlete.createShooting(shooting,mAthleteDataId);
@@ -347,7 +375,7 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
 
-    public void CreateView(LineChart chart, float Ymax, float Ymin){
+    public void CreateView(LineChart chart, float Ymax, float Ymin,String name){
 
         chart.setTouchEnabled(true);
         chart.setDragEnabled(true);
@@ -355,6 +383,10 @@ public class GraphingActivity extends AppCompatActivity {
         chart.setPinchZoom(false);
         chart.setScaleXEnabled(true);
         chart.setBackgroundColor(Color.rgb(102,209,255));
+        Description description = new Description();
+        description.setText(name);
+        chart.setDescription(description);
+
 
 
         XAxis xl = chart.getXAxis();

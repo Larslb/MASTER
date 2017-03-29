@@ -89,7 +89,7 @@ public class NewExerciseActivity extends Activity  {
         mFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
         mAthleteList = mAthleteDB.getAllAthletes();
         Log.d(TAG,"mAThLETeLIST;: " + mAthleteList.toString());
-        mAdapter = new ArrayAdapter<AthleteData>(this,android.R.layout.simple_list_item_1,mAthleteList);
+        mAdapter = new arrayListAdapter(this,mAthleteList);
         //mAdapter = new SimpleAdapter(this,
          //       mAthleteList,
          //       R.layout.data_list,new String[] {"FirstName", "SurName"},new int[]{R.id.name1, R.id.name2});
@@ -116,7 +116,7 @@ public class NewExerciseActivity extends Activity  {
     public void onCreateNewButtonPressed(){
         String dateofBirth = convertDOB(mDatePicker.getDayOfMonth(),mDatePicker.getMonth(),mDatePicker.getYear());
         AthleteData athlete = createAthlete(mFirstName.getText().toString(),mLastName.getText().toString(),dateofBirth);
-        long res = mAthleteDB.createAthlete(athlete);
+        int res = mAthleteDB.createAthlete(athlete);
         Log.d(TAG,"Result from Adding athelete:     " + res);
         Intent intent = new Intent(this,DeviceScanActivity.class);
         intent.putExtra(FIRST_NAME,mFirstName.getText().toString());

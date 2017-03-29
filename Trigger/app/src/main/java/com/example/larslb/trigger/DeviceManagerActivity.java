@@ -33,6 +33,7 @@ import java.util.List;
 import android.widget.ViewFlipper;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Description;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.LegendEntry;
 import com.github.mikephil.charting.components.XAxis;
@@ -107,13 +108,8 @@ public class DeviceManagerActivity extends AppCompatActivity {
         mstore = true;
         mNotify = false;
 
-        pThread = new PlottingThread("Plotting Thread");
         mServices = new ArrayList<>();
-        mForceData = new ArrayList<>();
-        mGyroData = new ArrayList<>();
-        mAccData = new ArrayList<>();
-        mForceTimeData = new ArrayList<>();
-        mGyroAccTimeData = new ArrayList<>();
+
 
         shotCounter = 0;
 
@@ -129,21 +125,19 @@ public class DeviceManagerActivity extends AppCompatActivity {
         mDeviceText = (TextView) findViewById(R.id.serviceText);
         mDeviceText.setText(mDeviceName);
 
-        mForceChart = (LineChart) findViewById(R.id.forcegraph);
         //mAccChart = (LineChart) findViewById(R.id.accgraph);
         //mGyroChart = (LineChart) findViewById(R.id.gyrograph);
 
 
-        initGraph(mForceChart,false, 300f,-10f);
         //initGraph(mAccChart,true,5000f,0f);
         //initGraph(mGyroChart,true,5000f,0f);
 
-        pThread.start();
 
     }
     @Override
     public void onPause(){
         super.onPause();
+        Log.d(TAG,"OnPause");
 
         if (pThread != null){
             pThread.interrupt();
@@ -158,12 +152,16 @@ public class DeviceManagerActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
         Log.d(TAG,"OnResume!");
-        if (!mNotify){
-            notifyAllCharacteristics(true);
-            mNotify = true;
-        }
+
+
+
+        initGraph(mForceChart,false, 300f,-10f, "Force Measurement");
+
+
         pThread = new PlottingThread("Plotting Thread");
         pThread.start();
+
+
     }
 
     private final BroadcastReceiver mGattUpdateReciever = new BroadcastReceiver() {
@@ -195,6 +193,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
     public void notifyAllCharacteristics(boolean enable){
         for (BluetoothGattCharacteristic characteristic : mNotifyCharacteristics){
+            Log.d(TAG, "characteristic to be notified:  " + DeviceServices.lookup(characteristic.getUuid().toString(),"unknown"));
             mBLEConnectService.setCharacteristicNotification(characteristic,enable);
         }
     }
@@ -205,6 +204,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         graphingintent.putExtra(NewExerciseActivity.FIRST_NAME,mAthleteFirstName);
         graphingintent.putExtra(NewExerciseActivity.LAST_NAME,mAthleteLastName);
         graphingintent.putExtra(NewExerciseActivity.ATHLETE_ID,mAthleteId);
+        graphingintent.putExtra(GraphingActivity.ENABLE_SAVE,true);
         graphingintent.putIntegerArrayListExtra(GraphingActivity.FORCE_TEXT,mForceData);
         graphingintent.putIntegerArrayListExtra(GraphingActivity.ACCELEROMETER_TEXT,mAccData);
         graphingintent.putIntegerArrayListExtra(GraphingActivity.GYROSCOPE_TEXT,mGyroData);
@@ -214,7 +214,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
     }
 
 
-    public void initGraph(LineChart lineChart,boolean threeAxis, float Ymax, float Ymin){
+    public void initGraph(LineChart lineChart,boolean threeAxis, float Ymax, float Ymin, String name){
         lineChart.getDescription().setEnabled(false);
         lineChart.setTouchEnabled(true);
         lineChart.setDragEnabled(true);
@@ -222,6 +222,9 @@ public class DeviceManagerActivity extends AppCompatActivity {
         lineChart.setDrawGridBackground(false);
         lineChart.setPinchZoom(true);
         lineChart.setBackgroundColor(Color.rgb(102,209,255));
+        Description description = new Description();
+        description.setText(name);
+        lineChart.setDescription(description);
 
         List<ILineDataSet> datasets = new ArrayList<>();
         if (threeAxis){
@@ -236,6 +239,8 @@ public class DeviceManagerActivity extends AppCompatActivity {
             datasets.add(zSet);
         }else{
             LineDataSet set = createSet("Force");
+            set.setDrawCircles(false);
+            set.setDrawValues(false);
             datasets.add(set);
         }
         LineData lineData = new LineData(datasets);
@@ -270,6 +275,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
 
 
+
     private LineDataSet createSet(String name) {
 
         LineDataSet set = new LineDataSet(null, name);
@@ -280,7 +286,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
         set.setFillAlpha(65);
         set.setFillColor(ColorTemplate.getHoloBlue());
         set.setHighLightColor(Color.rgb(244, 117, 117));
-        set.setDrawValues(false);
         return set;
     }
 
@@ -291,6 +296,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
     public void lookupCharacteristics(){
         if (mGattCharacteristics != null) {
             //final ArrayList<BluetoothGattCharacteristic> characteristics = mGattCharacteristics.get(position);
+            mNotifyCharacteristics = new ArrayList<>();
             for (BluetoothGattCharacteristic characteristic : mGattCharacteristics) {
                 final int charaProp = characteristic.getProperties();
                 Log.d(TAG,"CHARACTERISTIC: " + DeviceServices.lookup(characteristic.getUuid().toString(),"unknown"));
@@ -298,12 +304,12 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
 
                 if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                    Log.d(TAG,"" + characteristic.getUuid().toString() + " added to notification Characteristics");
                     mNotifyCharacteristics.add(characteristic);
                 }
             }
             Log.d(TAG,"Notify bool:     " + mNotify);
             notifyAllCharacteristics(true);
+            mNotify = true;
 
         }
     }
@@ -425,7 +431,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
         ArrayList<Integer> intarray = new ArrayList<>();
         for (int i=0;i<=barray.length-1;i+=7) {
 
-            System.out.println(barray.toString());
             /*Log.d(TAG, "x uint16 byte:       ---         " + convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
             Log.d(TAG, "y uint16 byte:       ---         " + convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
             Log.d(TAG, "z uint16 byte:       ---         " + convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
@@ -464,16 +469,25 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
     @Override
     protected void onStart(){
+        Log.d(TAG,"OnStart");
         super.onStart();
         Intent intent = new Intent(this, BLEConnectService.class);
         bindService(intent,mServiceConnection,BIND_AUTO_CREATE);
         LocalBroadcastManager.getInstance(this).registerReceiver(mGattUpdateReciever, makeGattUpdateIntentFilter());
 
+
+        mForceChart = (LineChart) findViewById(R.id.forcegraph);
+        mForceData = new ArrayList<>();
+        mGyroData = new ArrayList<>();
+        mAccData = new ArrayList<>();
+        mForceTimeData = new ArrayList<>();
+        mGyroAccTimeData = new ArrayList<>();
+
     }
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        mBLEConnectService.disconnect();
+        mBLEConnectService = null;
     }
 
     private static IntentFilter makeGattUpdateIntentFilter() {
@@ -487,15 +501,24 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
     @Override
     protected void onStop() {
+        Log.d(TAG,"onStop");
         super.onStop();
         Log.d(TAG,"BOUNDED: " + mBound);
         if (mBound){
             unbindService(mServiceConnection);
             mBound = false;
+
         }
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mGattUpdateReciever);
 
 
+        mNotify = false;
+        mForceData = null;
+        mAccData = null;
+        mGyroData = null;
+        mForceTimeData = null;
+        mGyroAccTimeData = null;
+        mForceChart = null;
     }
 
     @Override
@@ -695,7 +718,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         public void run() {
             while (true) {
                 if(!mNotify){
-                    return;
+                    continue;
                 }
                 if ((order = mQueue.poll()) != null) {
                     String[] parts = order.split(":");
@@ -706,6 +729,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
                     Thread.sleep(0,10000);
                 }catch (InterruptedException e){
                     Log.d(TAG,"Interrupt Exception");
+                    break;
                 }
             }
         }

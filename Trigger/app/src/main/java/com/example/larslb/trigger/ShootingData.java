@@ -15,12 +15,14 @@ public class ShootingData {
     String date;
     int numberOfShootings;
     String filename;
+    String shootingDescriptor;
     int athleteId;
 
     public static final String TABLE_NAME = "shootings_table";
     public static final String COLUMN_ID = "_id";
     public static final String COLUM_DATE = "date";
     public static final String COLUMN_NUMBER_SHOOTINGS = "number_of_shootings";
+    public static final String COLUMN_SHOOTINGDESCRIPTION = "shooting_description";
     public static final String COLUMN_FILENAME = "filename";
     public static final String COLUMN_ATHLETEID = "athlete_id";
 
@@ -49,6 +51,8 @@ public class ShootingData {
         this.filename = filename;
     }
 
+    public void setShootingDescriptor(String shootingDescriptor) {this.shootingDescriptor = shootingDescriptor;}
+
     public void set_id(int id){
         this._id = id;
     }
@@ -57,7 +61,7 @@ public class ShootingData {
 
 
     //getters
-    public long getId(){
+    public int getId(){
         return this._id;
     }
 
@@ -71,6 +75,8 @@ public class ShootingData {
     public int getNumberOfShootings(){
         return this.numberOfShootings;
     }
+
+    public String getShootingDescriptor() {return this.shootingDescriptor;}
 
     //print
     public void printShootingData(){

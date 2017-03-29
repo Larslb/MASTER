@@ -191,6 +191,7 @@ public class BLEConnectService extends Service {
             Log.w(TAG,"BluetoothAdapter not initialized");
             return;
         }
+        Log.d(TAG,"Disconnect");
         mGatt.disconnect();
     }
 

@@ -260,10 +260,10 @@ public class LoadDataActivity extends MainActivity {
             TextView name2 = (TextView) convertView.findViewById(R.id.name2);
 
 
-            StringBuilder sb = new StringBuilder();
-            sb.append(shootingData.getNumberOfShootings());
-            name2.setText(sb.toString());
+
             name1.setText(shootingData.getDate());
+            name2.setText(shootingData.getShootingDescriptor());
+
 
             return convertView;
         }

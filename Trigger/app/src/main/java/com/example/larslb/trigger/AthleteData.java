@@ -10,11 +10,11 @@ import java.util.HashMap;
  * Created by larslb on 15.02.2017.
  */
 public class AthleteData {
-    int _id;
-    String firstName;
-    String lastName;
-    String dateOfBirth;
-    String gender;
+    private int _id;
+    private String firstName;
+    private String lastName;
+    private String dateOfBirth;
+    private String gender;
 
     public static final String TABLE_NAME = "athlete_table";
     public static final String COLUMN_ID = "_id";
@@ -65,7 +65,7 @@ public class AthleteData {
 
     //getters
 
-    public long getId(){
+    public int getId(){
         return this._id;
     }
     public String getFullName(){

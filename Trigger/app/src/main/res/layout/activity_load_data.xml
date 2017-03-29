@@ -11,14 +11,48 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.larslb.trigger.LoadDataActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="20dp"
-        android:id="@+id/select_name"/>
-
-    <ListView
+    <ViewFlipper
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/Load_list">
-    </ListView>
+        android:layout_height="match_parent"
+        android:id="@+id/loadFlipper">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:id="@+id/select_name"
+                android:text="Select Athlete to load data from"/>
+
+            <ListView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/Load_list">
+            </ListView>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="20dp"
+                android:id="@+id/select_shooting"
+                android:text="Select Shooting to load"/>
+
+            <ListView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/load_shooting_list">
+            </ListView>
+
+        </LinearLayout>
+
+
+
+    </ViewFlipper>
 </LinearLayout>

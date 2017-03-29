@@ -3,16 +3,19 @@ package com.example.larslb.trigger;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.ListActivity;
+import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
@@ -22,6 +25,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 import java.util.ArrayList;
@@ -85,7 +89,7 @@ public class NewExerciseActivity extends Activity  {
         mFlipper = (ViewFlipper) findViewById(R.id.viewFlipper);
         mAthleteList = mAthleteDB.getAllAthletes();
         Log.d(TAG,"mAThLETeLIST;: " + mAthleteList.toString());
-        mAdapter = new ArrayAdapter<AthleteData>(this,R.layout.data_list,mAthleteList);
+        mAdapter = new ArrayAdapter<AthleteData>(this,android.R.layout.simple_list_item_1,mAthleteList);
         //mAdapter = new SimpleAdapter(this,
          //       mAthleteList,
          //       R.layout.data_list,new String[] {"FirstName", "SurName"},new int[]{R.id.name1, R.id.name2});
@@ -99,7 +103,8 @@ public class NewExerciseActivity extends Activity  {
         Intent intent = new Intent(this,DeviceScanActivity.class);
         intent.putExtra(FIRST_NAME,Athlete.getFirstName());
         intent.putExtra(LAST_NAME,Athlete.getLastName());
-        intent.putExtra(ATHLETE_ID,Athlete.getId());
+        Log.d(TAG,"Athlete ID to Exercise: " + Athlete.getId());
+        intent.putExtra(ATHLETE_ID, Athlete.getId());
         startActivity(intent);
     }
 
@@ -111,7 +116,7 @@ public class NewExerciseActivity extends Activity  {
     public void onCreateNewButtonPressed(){
         String dateofBirth = convertDOB(mDatePicker.getDayOfMonth(),mDatePicker.getMonth(),mDatePicker.getYear());
         AthleteData athlete = createAthlete(mFirstName.getText().toString(),mLastName.getText().toString(),dateofBirth);
-        Long res = mAthleteDB.createAthlete(athlete);
+        long res = mAthleteDB.createAthlete(athlete);
         Log.d(TAG,"Result from Adding athelete:     " + res);
         Intent intent = new Intent(this,DeviceScanActivity.class);
         intent.putExtra(FIRST_NAME,mFirstName.getText().toString());
@@ -132,7 +137,7 @@ public class NewExerciseActivity extends Activity  {
 
     public AthleteData createAthlete(String firstName, String lastName, String DoB){
         AthleteData athleteData = new AthleteData();
-        athleteData.set_id(mAthleteList.size() +1);
+        athleteData.set_id(mAthleteList.size() + 1);
         athleteData.setFirstName(firstName);
         athleteData.setLastName(lastName);
         athleteData.setDateOfBirth(DoB);
@@ -165,6 +170,34 @@ public class NewExerciseActivity extends Activity  {
                 mAdapter.notifyDataSetChanged();
         }
         return true;
+    }
+
+
+    public class arrayListAdapter extends ArrayAdapter<AthleteData> {
+
+        public arrayListAdapter(Context context, ArrayList<AthleteData> athletes){
+            super(context,0,athletes);
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent){
+
+            AthleteData athleteData = getItem(position);
+
+            if (convertView == null){
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.data_list,parent,false);
+            }
+
+            TextView name1 = (TextView) convertView.findViewById(R.id.name1);
+            TextView name2 = (TextView) convertView.findViewById(R.id.name2);
+
+            name1.setText(athleteData.getFirstName());
+            name2.setText(athleteData.getLastName());
+
+            return convertView;
+        }
+
+
     }
 
 }

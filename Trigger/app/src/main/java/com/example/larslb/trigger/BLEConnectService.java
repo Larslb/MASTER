@@ -96,7 +96,7 @@ public class BLEConnectService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
             broadCastUpdate(ACTION_DATA_AVAILABLE,characteristic);
-
+            /*
             StringBuilder stringBuilder = new StringBuilder();
             Log.d(TAG,"Characteristic Test : " + characteristic.getUuid().toString() + " -- " + DeviceServices.GYRO_ATTRIBUTE);
             if (characteristic.getUuid().toString().equals(DeviceServices.GYRO_ATTRIBUTE)){
@@ -106,7 +106,7 @@ public class BLEConnectService extends Service {
                 }
                 Log.d(TAG,"Gyro         ---         " + stringBuilder.toString());
 
-            }
+            }*/
         }
 
         @Override

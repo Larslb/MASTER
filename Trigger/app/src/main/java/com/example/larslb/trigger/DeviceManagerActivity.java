@@ -54,6 +54,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
     private String mDeviceAddress;
     private String mAthleteFirstName;
     private String mAthleteLastName;
+    private int mAthleteId;
     private boolean mstore;
     private boolean mNotify;
     private TextView mConnectionState;
@@ -104,7 +105,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
 
         mstore = true;
-
+        mNotify = false;
 
         pThread = new PlottingThread("Plotting Thread");
         mServices = new ArrayList<>();
@@ -121,6 +122,8 @@ public class DeviceManagerActivity extends AppCompatActivity {
         mDeviceAddress = intent.getStringExtra(DeviceScanActivity.EXTRA_ADDRESS);
         mAthleteFirstName = intent.getStringExtra(NewExerciseActivity.FIRST_NAME);
         mAthleteLastName = intent.getStringExtra(NewExerciseActivity.LAST_NAME);
+        mAthleteId = intent.getIntExtra(NewExerciseActivity.ATHLETE_ID,0);
+
         //mServiceName = (TextView) findViewById(R.id.service_name);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDeviceText = (TextView) findViewById(R.id.serviceText);
@@ -146,16 +149,20 @@ public class DeviceManagerActivity extends AppCompatActivity {
             pThread.interrupt();
         }
 
+        mNotify = false;
+        notifyAllCharacteristics(false);
 
 
     }
     @Override
     public void onResume(){
         super.onResume();
+        Log.d(TAG,"OnResume!");
         if (!mNotify){
             notifyAllCharacteristics(true);
             mNotify = true;
         }
+        pThread = new PlottingThread("Plotting Thread");
         pThread.start();
     }
 
@@ -193,16 +200,16 @@ public class DeviceManagerActivity extends AppCompatActivity {
     }
 
     public void startGraphingActivity(){
-        mNotify = false;
-        notifyAllCharacteristics(false);
+
         Intent graphingintent = new Intent(this,GraphingActivity.class);
         graphingintent.putExtra(NewExerciseActivity.FIRST_NAME,mAthleteFirstName);
         graphingintent.putExtra(NewExerciseActivity.LAST_NAME,mAthleteLastName);
-        graphingintent.putIntegerArrayListExtra("FORCE",mForceData);
-        graphingintent.putIntegerArrayListExtra("ACC",mAccData);
-        graphingintent.putIntegerArrayListExtra("GYRO",mGyroData);
-        graphingintent.putIntegerArrayListExtra("FORCETIME",mForceTimeData);
-        graphingintent.putIntegerArrayListExtra("GYROACCTIME",mGyroAccTimeData);
+        graphingintent.putExtra(NewExerciseActivity.ATHLETE_ID,mAthleteId);
+        graphingintent.putIntegerArrayListExtra(GraphingActivity.FORCE_TEXT,mForceData);
+        graphingintent.putIntegerArrayListExtra(GraphingActivity.ACCELEROMETER_TEXT,mAccData);
+        graphingintent.putIntegerArrayListExtra(GraphingActivity.GYROSCOPE_TEXT,mGyroData);
+        graphingintent.putIntegerArrayListExtra(GraphingActivity.FORCETIME_TEXT,mForceTimeData);
+        graphingintent.putIntegerArrayListExtra(GraphingActivity.ACCGYROTIME_TEXT,mGyroAccTimeData);
         startActivity(graphingintent);
     }
 
@@ -289,20 +296,14 @@ public class DeviceManagerActivity extends AppCompatActivity {
                 Log.d(TAG,"CHARACTERISTIC: " + DeviceServices.lookup(characteristic.getUuid().toString(),"unknown"));
                 Log.d(TAG, "Properties: " + charaProp);
 
-                if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-
-                    //mBLEConnectService.readCharacteristic(characteristic);
-
-                }
 
                 if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    Log.d(TAG,"" + characteristic.getUuid().toString() + " added to notification Characteristics");
                     mNotifyCharacteristics.add(characteristic);
                 }
             }
-            if (!mNotify){
-                notifyAllCharacteristics(true);
-                mNotify = true;
-            }
+            Log.d(TAG,"Notify bool:     " + mNotify);
+            notifyAllCharacteristics(true);
 
         }
     }
@@ -693,21 +694,16 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
         public void run() {
             while (true) {
-                //Log.d(TAG, "QueueSize          ---         " + mQueue.size());
-                if (mQueue.size() == 0 ){
-                    continue;
-                } else if (!mNotify){
-                    break;
+                if(!mNotify){
+                    return;
                 }
-                else{
-                    order = mQueue.poll();
+                if ((order = mQueue.poll()) != null) {
+                    String[] parts = order.split(":");
+                    addEntry(parts[0], parts[1]);
                 }
-                String[] parts = order.split(":");
-                addEntry(parts[0], parts[1]);
-
 
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(0,10000);
                 }catch (InterruptedException e){
                     Log.d(TAG,"Interrupt Exception");
                 }

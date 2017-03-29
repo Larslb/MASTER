@@ -18,7 +18,7 @@ import java.util.List;
 public class DBHelper extends SQLiteOpenHelper {
     private static final String TAG = DBHelper.class.getSimpleName();
 
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     private static final String DATABASE_NAME = "triggerdb";
 
     private static final String CREATE_TABLE_ATHLETES = "CREATE TABLE " + AthleteData.TABLE_NAME + "(" +
@@ -69,7 +69,7 @@ public class DBHelper extends SQLiteOpenHelper {
     /*
         CRUD methods for AthleteData Table
      */
-    public long createAthlete(AthleteData athleteData) {
+    public int createAthlete(AthleteData athleteData) {
         SQLiteDatabase db = this.getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
@@ -77,7 +77,21 @@ public class DBHelper extends SQLiteOpenHelper {
         contentValues.put(AthleteData.COLUMN_LASTNAME,athleteData.getLastName());
         contentValues.put(AthleteData.COLUMN_DATEOFBIRTH,athleteData.getDateOfBirth());
         contentValues.put(AthleteData.COLUMN_GENDER,athleteData.getGender());
-        long id =  db.insert(AthleteData.TABLE_NAME,null,contentValues);
+        int id = (int) db.insert(AthleteData.TABLE_NAME,null,contentValues);
+        db.close();
+        return id;
+    }
+
+    public int getAthleteId(String firstName, String lastName){
+        SQLiteDatabase db = this.getWritableDatabase();
+        String getQuery = "SELECT * FROM " + AthleteData.TABLE_NAME + " WHERE " +
+                AthleteData.COLUMN_FIRSTNAME + " = " + firstName + " AND " + AthleteData.COLUMN_LASTNAME +
+                " = " + lastName;
+        Cursor cursor = db.rawQuery(getQuery,null);
+        if (cursor != null){
+            cursor.moveToFirst();
+        }
+        int id = cursor.getInt(cursor.getColumnIndex(AthleteData.COLUMN_ID));
         db.close();
         return id;
     }
@@ -174,7 +188,7 @@ public class DBHelper extends SQLiteOpenHelper {
         CRUD methods for Shootings Table
      */
 
-    public long createShooting(ShootingData shootingData, int athletedataId) {
+    public int createShooting(ShootingData shootingData, int athletedataId) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(ShootingData.COLUMN_ID,shootingData.getId());
@@ -182,7 +196,7 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put(ShootingData.COLUMN_NUMBER_SHOOTINGS,shootingData.getNumberOfShootings());
         values.put(ShootingData.COLUMN_FILENAME,shootingData.getFilename());
         values.put(ShootingData.COLUMN_ATHLETEID,athletedataId);
-        long id = db.insert(ShootingData.TABLE_NAME,null,values);
+        int id = (int) db.insert(ShootingData.TABLE_NAME,null,values);
         db.close();
         return id;
     }
@@ -191,6 +205,8 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String getShooting = "SELECT * FROM " + ShootingData.TABLE_NAME + " WHERE " + ShootingData.COLUMN_ID
                 + " = " + id;
+
+        Log.d(TAG, "get shooting data query : " + getShooting);
         Cursor cursor = db.rawQuery(getShooting,null);
         if (cursor != null){
             cursor.moveToFirst();
@@ -232,8 +248,8 @@ public class DBHelper extends SQLiteOpenHelper {
         return shootings;
     }
 
-    public List<ShootingData> getAllShootingsFromAthleteID(long AthleteId){
-        List<ShootingData> shootingDataList = new ArrayList<>();
+    public ArrayList<ShootingData> getAllShootingsFromAthleteID(long AthleteId){
+        ArrayList<ShootingData> shootingDataList = new ArrayList<>();
         String selectAllFromOneQuery = "SELECT * FROM " + ShootingData.TABLE_NAME + " WHERE " +
                 ShootingData.COLUMN_ATHLETEID + " = " + AthleteId;
 
@@ -261,6 +277,43 @@ public class DBHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         db.delete(ShootingData.TABLE_NAME, ShootingData.COLUMN_ID + " = ?" ,new String[]{String.valueOf(shooting_id)});
         db.close();
+    }
+
+
+    //PrintTables
+
+    public void printAthletesTable(){
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + AthleteData.TABLE_NAME,null);
+        String tableString = String.format("Table %s:\n",AthleteData.TABLE_NAME);
+
+        while (cursor.moveToNext()){
+            String[] columnNames = cursor.getColumnNames();
+            for (String name : columnNames){
+                //Log.d(TAG,"Column : " + name + "    Data: " + cursor.getString(cursor.getColumnIndex(name)));
+                tableString += String.format("%s: %s\n", name, cursor.getString(cursor.getColumnIndex(name)));
+            }
+            tableString += "\n";
+        }
+        db.close();
+        Log.d(TAG,tableString);
+    }
+
+    public void printShootingDataTable(){
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT * FROM " + ShootingData.TABLE_NAME,null);
+        String tableString = String.format("Table %s:\n",ShootingData.TABLE_NAME);
+
+        while (cursor.moveToNext()){
+            String[] columnNames = cursor.getColumnNames();
+            for (String name : columnNames){
+                //Log.d(TAG,"Column : " + name + "    Data: " + cursor.getString(cursor.getColumnIndex(name)));
+                tableString += String.format("%s: %s\n", name, cursor.getString(cursor.getColumnIndex(name)));
+            }
+            tableString += "\n";
+        }
+        db.close();
+        Log.d(TAG,tableString);
     }
 
 }

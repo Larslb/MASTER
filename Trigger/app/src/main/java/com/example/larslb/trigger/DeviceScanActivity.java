@@ -79,6 +79,7 @@ public class DeviceScanActivity extends ListActivity {
     private BluetoothLeScanner mBLEScanner;
     private String athleteFirstName;
     private String athleteLastName;
+    private int athleteId;
     private ScanSettings mSettings;
     private Handler mHandler;
     private String mdevice;
@@ -104,7 +105,7 @@ public class DeviceScanActivity extends ListActivity {
         Intent intent = getIntent();
         athleteFirstName = intent.getStringExtra(NewExerciseActivity.FIRST_NAME);
         athleteLastName = intent.getStringExtra(NewExerciseActivity.LAST_NAME);
-
+        athleteId = intent.getIntExtra(NewExerciseActivity.ATHLETE_ID,0);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)){
             Toast.makeText(this, "BLE not supported by device",Toast.LENGTH_SHORT).show();
             finish();
@@ -243,6 +244,7 @@ public class DeviceScanActivity extends ListActivity {
         intent.putExtra(NewExerciseActivity.LAST_NAME,athleteLastName);
         intent.putExtra(EXTRA_NAME,name);
         intent.putExtra(EXTRA_ADDRESS,address);
+        intent.putExtra(NewExerciseActivity.ATHLETE_ID,athleteId);
         if (Build.VERSION.SDK_INT < 21){
             mBLEAdapter.stopLeScan(adapterLeScanCallback);
         }else{

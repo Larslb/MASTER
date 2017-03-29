@@ -11,6 +11,13 @@ import android.view.MenuItem;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.sql.Date;
+import java.text.DateFormat;
+import java.text.FieldPosition;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 
 
@@ -53,6 +60,9 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.utils.ColorTemplate;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,19 +73,30 @@ public class GraphingActivity extends AppCompatActivity {
     String mAthleteSurName;
     TextView mTextAthleteFirstName;
     TextView mTextAthleteSurName;
+    ArrayList<ShootingData> mShootings;
 
     ViewFlipper mFlipper;
 
-    DBAthlete mDBAthlete;
+    DBHelper mDBAthlete;
     ArrayList<Integer> mForceDataList;
     ArrayList<Integer> mGyroDataList;
     ArrayList<Integer> mAccDataList;
     ArrayList<Integer> mForceTime;
     ArrayList<Integer> mGyroAccTime;
+    private int mAthleteDataId;
+    private int mShootingCounter = 0;
+    private boolean mEnableSave;
 
     LineChart mForceGraph;
     LineChart mAccGraph;
     LineChart mGyroGraph;
+
+    public static final String FORCE_TEXT = "FORCE";
+    public static final String ACCELEROMETER_TEXT = "ACC";
+    public static final String GYROSCOPE_TEXT = "GYRO";
+    public static final String FORCETIME_TEXT = "FORCETIME";
+    public static final String ACCGYROTIME_TEXT = "ACCGYROTIME";
+    public static final String ENABLE_SAVE = "ENABLE_SAVE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,19 +104,22 @@ public class GraphingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_graphing);
         Log.d(TAG,"onCreate!");
 
-        mDBAthlete = new DBAthlete(this);
+        mDBAthlete = new DBHelper(this);
         Intent intent = getIntent();
-        mForceDataList = intent.getIntegerArrayListExtra("FORCE");
-        mAccDataList = intent.getIntegerArrayListExtra("ACC");
-        mGyroDataList = intent.getIntegerArrayListExtra("GYRO");
-        mForceTime = intent.getIntegerArrayListExtra("FORCETIME");
-        mGyroAccTime = intent.getIntegerArrayListExtra("GYROACCTIME");
+        mForceDataList = intent.getIntegerArrayListExtra(FORCE_TEXT);
+        mAccDataList = intent.getIntegerArrayListExtra(ACCELEROMETER_TEXT);
+        mGyroDataList = intent.getIntegerArrayListExtra(GYROSCOPE_TEXT);
+        mAthleteDataId = intent.getIntExtra(NewExerciseActivity.ATHLETE_ID,0);
+        mForceTime = intent.getIntegerArrayListExtra(FORCETIME_TEXT);
+        mEnableSave = intent.getBooleanExtra(ENABLE_SAVE,true);
+        mGyroAccTime = intent.getIntegerArrayListExtra(ACCGYROTIME_TEXT);
         mAthleteFirstName = intent.getStringExtra(NewExerciseActivity.FIRST_NAME);
         mAthleteSurName = intent.getStringExtra(NewExerciseActivity.LAST_NAME);
         mTextAthleteFirstName = (TextView) findViewById(R.id.athletefirstName);
         mTextAthleteFirstName.setText(mAthleteFirstName);
         mTextAthleteSurName = (TextView) findViewById(R.id.athleteLastName);
         mTextAthleteSurName.setText(mAthleteSurName);
+        mShootings = mDBAthlete.getAllShootings();
 
 
         mFlipper = (ViewFlipper) findViewById(R.id.GraphFlipper);
@@ -106,36 +130,42 @@ public class GraphingActivity extends AppCompatActivity {
         CreateView(mForceGraph,300f,-10f);
         CreateView(mAccGraph, 5000f,-5000f);
         CreateView(mGyroGraph, 5000f,-5000f);
+        mShootingCounter ++;
 
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
         Log.d(TAG,"OnCreateOptionsMenu!");
         super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.plottingmenu,menu);
+        if (mEnableSave) getMenuInflater().inflate(R.menu.plottingmenu,menu);
+        else getMenuInflater().inflate(R.menu.plottingmenu_without_save,menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+
+        switch (item.getItemId()) {
             case R.id.Force:
                 mFlipper.setDisplayedChild(1);
                 createSingleForceView();
-            break;
+                break;
             case R.id.ACC:
                 mFlipper.setDisplayedChild(2);
                 createSingleAccView();
-            break;
+                break;
             case R.id.Gyro:
                 mFlipper.setDisplayedChild(3);
                 createSingleGyroView();
                 break;
 
             case R.id.Save:
+                mFlipper.setDisplayedChild(0);
                 saveToDataBase();
                 break;
         }
+
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -214,6 +244,10 @@ public class GraphingActivity extends AppCompatActivity {
         mAccGraph.invalidate();
     }
 
+    public int numberOfShootings(){
+     return 1; //TODO: implement detection of shootings
+    }
+
     public void createSingleGyroView(){
         List<List<Integer>> convertedData = convertToXYZData(mGyroDataList);
         List<Integer> Xdata = convertedData.get(0);
@@ -257,15 +291,59 @@ public class GraphingActivity extends AppCompatActivity {
             Log.d(TAG,"TEST is not part of DB");
             return false;
         }
+
+
+        JSONObject jsonObject = makeJSONObject();
+        ShootingData shooting = new ShootingData();
+        Date date = new Date(System.currentTimeMillis());
+        String  stringDate = DateFormat.getDateTimeInstance().format(date);
+        shooting.setDate(stringDate);
+        shooting.setNumberOfShootings(numberOfShootings());
+        shooting.set_id(mShootings.size() + 1);
+        shooting.setFilename(saveFile(jsonObject,stringDate));
+        shooting.setAthlete_id(mAthleteDataId);
+        shooting.printShootingData();
+        mDBAthlete.createShooting(shooting,mAthleteDataId);
+
+        return true;
+    }
+    public String saveFile(JSONObject jsonObject,String date){
+        String filename =  mAthleteFirstName + mAthleteSurName + date + ".txt";
+        Context context = getApplicationContext();
+        File file = new File(context.getFilesDir(),filename);
+        Log.d(TAG,"Saving file : " + filename + "\n" +
+            " to Path: " + file.getAbsolutePath());
+
+        try {
+            FileWriter out = new FileWriter(file);
+            out.write(jsonObject.toString());
+            out.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return filename;
+    }
+
+    public JSONObject makeJSONObject(){
+        JSONObject jsonObject = new JSONObject();
         String forceData = mForceDataList.toString();
         String AccData = mAccDataList.toString();
         String GyroData = mGyroDataList.toString();
         String ForceTime = mForceTime.toString();
         String AccGyroTime = mGyroAccTime.toString();
-        if (mDBAthlete.contains(mAthleteFirstName + mAthleteSurName));
-        mDBAthlete.addToExistingAthlete(mAthleteFirstName,mAthleteSurName,
-                forceData,ForceTime,AccData,GyroData,AccGyroTime);
-        return true;
+        try{
+            jsonObject.put(FORCE_TEXT,forceData);
+            jsonObject.put(ACCELEROMETER_TEXT,AccData);
+            jsonObject.put(GYROSCOPE_TEXT,GyroData);
+            jsonObject.put(FORCETIME_TEXT,ForceTime);
+            jsonObject.put(ACCGYROTIME_TEXT,AccGyroTime);
+
+        }catch (JSONException e){
+            e.printStackTrace();
+
+        }
+        Log.d(TAG,"JSON object to be stored: " + jsonObject.toString());
+        return jsonObject;
     }
 
 

@@ -1,5 +1,7 @@
 package com.example.larslb.trigger;
 
+import android.util.Log;
+
 import java.util.Date;
 
 /**
@@ -7,18 +9,20 @@ import java.util.Date;
  */
 
 public class ShootingData {
+    private static final String TAG = ShootingData.class.getSimpleName();
 
     int _id;
     String date;
     int numberOfShootings;
     String filename;
+    int athleteId;
 
     public static final String TABLE_NAME = "shootings_table";
     public static final String COLUMN_ID = "_id";
     public static final String COLUM_DATE = "date";
     public static final String COLUMN_NUMBER_SHOOTINGS = "number_of_shootings";
     public static final String COLUMN_FILENAME = "filename";
-    public static final String COLUMN_ATHLETEID = "";
+    public static final String COLUMN_ATHLETEID = "athlete_id";
 
     //constructors
     public ShootingData(){
@@ -49,6 +53,8 @@ public class ShootingData {
         this._id = id;
     }
 
+    public void setAthlete_id(int id) {this.athleteId = id;}
+
 
     //getters
     public long getId(){
@@ -66,4 +72,22 @@ public class ShootingData {
         return this.numberOfShootings;
     }
 
+    //print
+    public void printShootingData(){
+        String tableString = String.format("Table %s:\n",TABLE_NAME);
+        tableString += "\n";
+
+        tableString += "Shooting ID: " + this._id;
+        tableString += "\n";
+        tableString += "Shooting Date: " + this.date;
+        tableString += "\n";
+        tableString += "Shooting filename: "+ this.filename;
+        tableString += "\n";
+        tableString += "Shooting number of shootings: "+ this.numberOfShootings;
+        tableString += "\n";
+        tableString += "Shooting AthleteId: " + this.athleteId;
+
+        Log.d(TAG,tableString);
+
+    }
 }

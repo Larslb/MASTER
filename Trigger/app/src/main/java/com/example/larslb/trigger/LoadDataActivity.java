@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.os.Environment;
 import android.support.annotation.IntegerRes;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -119,10 +120,12 @@ public class LoadDataActivity extends MainActivity {
         graphingIntent.putExtra(NewExerciseActivity.ATHLETE_ID,mAthleteId);
         graphingIntent.putExtra(GraphingActivity.ENABLE_SAVE,false);
         graphingIntent.putIntegerArrayListExtra(GraphingActivity.FORCE_TEXT,dataToload.get(GraphingActivity.FORCE_TEXT));
+        graphingIntent.putIntegerArrayListExtra(GraphingActivity.FORCE_TIME_TEXT,dataToload.get(GraphingActivity.FORCE_TIME_TEXT));
         graphingIntent.putIntegerArrayListExtra(GraphingActivity.ACCELEROMETER_TEXT,dataToload.get(GraphingActivity.ACCELEROMETER_TEXT));
+        graphingIntent.putIntegerArrayListExtra(GraphingActivity.ACC_TIME_TEXT,dataToload.get(GraphingActivity.ACC_TIME_TEXT));
         graphingIntent.putIntegerArrayListExtra(GraphingActivity.GYROSCOPE_TEXT,dataToload.get(GraphingActivity.GYROSCOPE_TEXT));
-        graphingIntent.putIntegerArrayListExtra(GraphingActivity.FORCETIME_TEXT,dataToload.get(GraphingActivity.FORCETIME_TEXT));
-        graphingIntent.putIntegerArrayListExtra(GraphingActivity.ACCGYROTIME_TEXT,dataToload.get(GraphingActivity.ACCGYROTIME_TEXT));
+        graphingIntent.putIntegerArrayListExtra(GraphingActivity.GYRO_TIME_TEXT,dataToload.get(GraphingActivity.GYRO_TIME_TEXT));
+
 
         startActivity(graphingIntent);
 
@@ -134,19 +137,22 @@ public class LoadDataActivity extends MainActivity {
 
         String[] Force = {};
         String[] Accelerometer = {};
-        String[] Gyrometer = {};
+        String[] Gyroscope = {};
         String[] ForceTime = {};
-        String[] AccGyroTime = {};
+        String[] AccTime = {};
+        String[] GyroTime = {};
 
 
 
         try {
             JSONObject object = new JSONObject(file);
             Force = object.getString(GraphingActivity.FORCE_TEXT).split(",");
+            ForceTime = object.getString(GraphingActivity.FORCE_TIME_TEXT).split(",");
             Accelerometer = object.getString(GraphingActivity.ACCELEROMETER_TEXT).split(",");
-            Gyrometer = object.getString(GraphingActivity.GYROSCOPE_TEXT).split(",");
-            ForceTime = object.getString(GraphingActivity.FORCETIME_TEXT).split(",");
-            AccGyroTime = object.getString(GraphingActivity.ACCGYROTIME_TEXT).split(",");
+            AccTime = object.getString(GraphingActivity.ACC_TIME_TEXT).split(",");
+            Gyroscope = object.getString(GraphingActivity.GYROSCOPE_TEXT).split(",");
+            GyroTime = object.getString(GraphingActivity.GYRO_TIME_TEXT).split(",");
+
 
 
         }catch (Exception e){
@@ -155,15 +161,17 @@ public class LoadDataActivity extends MainActivity {
 
         ArrayList<Integer> ForceInt = fromStringToInts(Force);
         ArrayList<Integer> AccInt = fromStringToInts(Accelerometer);
-        ArrayList<Integer> GyroInt = fromStringToInts(Gyrometer);
+        ArrayList<Integer> GyroInt = fromStringToInts(Gyroscope);
         ArrayList<Integer> ForceTimeInt = fromStringToInts(ForceTime);
-        ArrayList<Integer> AccGyroTimeInt = fromStringToInts(AccGyroTime);
+        ArrayList<Integer> AccTimeInt = fromStringToInts(AccTime);
+        ArrayList<Integer> GyroTimeInt = fromStringToInts(GyroTime);
 
         data.put(GraphingActivity.FORCE_TEXT,ForceInt);
         data.put(GraphingActivity.ACCELEROMETER_TEXT,AccInt);
         data.put(GraphingActivity.GYROSCOPE_TEXT,GyroInt);
-        data.put(GraphingActivity.FORCETIME_TEXT,ForceTimeInt);
-        data.put(GraphingActivity.ACCGYROTIME_TEXT,AccGyroTimeInt);
+        data.put(GraphingActivity.FORCE_TIME_TEXT,ForceTimeInt);
+        data.put(GraphingActivity.ACC_TIME_TEXT,AccTimeInt);
+        data.put(GraphingActivity.GYRO_TIME_TEXT,GyroTimeInt);
         return data;
     }
 
@@ -184,7 +192,10 @@ public class LoadDataActivity extends MainActivity {
 
 
     public String readFromFile(String filename){
-        File file = new File(getApplicationContext().getFilesDir(),filename);
+        File path = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),mAthleteFirstName + mAthleteLastName);
+
+        File file = new File(path,filename);
+        Log.d(TAG, "Reading file from :     " + file.getAbsolutePath());
         InputStream is = this.getClass().getResourceAsStream(filename);
 
         StringBuilder text = new StringBuilder();

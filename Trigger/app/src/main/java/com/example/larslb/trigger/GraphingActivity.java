@@ -1,10 +1,12 @@
 package com.example.larslb.trigger;
 
 import android.app.Activity;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +18,8 @@ import android.widget.TextView;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.sql.Date;
 import java.text.DateFormat;
 import java.text.FieldPosition;
@@ -38,7 +42,6 @@ import android.widget.TextView;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -50,6 +53,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.ViewFlipper;
 
 
@@ -67,6 +71,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class GraphingActivity extends AppCompatActivity {
@@ -83,11 +88,13 @@ public class GraphingActivity extends AppCompatActivity {
     ViewFlipper mFlipper;
 
     DBHelper mDBAthlete;
-    ArrayList<Integer> mForceDataList;
-    ArrayList<Integer> mGyroDataList;
-    ArrayList<Integer> mAccDataList;
+    HashMap<String,ArrayList<Integer>> mForceDataList;
+    HashMap<String,ArrayList<Integer>> mGyroDataList;
+    HashMap<String,ArrayList<Integer>> mAccDataList;
     ArrayList<Integer> mForceTime;
-    ArrayList<Integer> mGyroAccTime;
+    ArrayList<Integer> mAccTime;
+    ArrayList<Integer> mGyroTime;
+
     private int mAthleteDataId;
     private int mShootingCounter = 0;
     private boolean mEnableSave;
@@ -99,8 +106,9 @@ public class GraphingActivity extends AppCompatActivity {
     public static final String FORCE_TEXT = "FORCE";
     public static final String ACCELEROMETER_TEXT = "ACC";
     public static final String GYROSCOPE_TEXT = "GYRO";
-    public static final String FORCETIME_TEXT = "FORCETIME";
-    public static final String ACCGYROTIME_TEXT = "ACCGYROTIME";
+    public static final String FORCE_TIME_TEXT = "FORCE_TIME";
+    public static final String ACC_TIME_TEXT = "ACC_TIME";
+    public static final String GYRO_TIME_TEXT = "GYRO_TIME";
     public static final String ENABLE_SAVE = "ENABLE_SAVE";
 
     @Override
@@ -108,16 +116,20 @@ public class GraphingActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_graphing);
         Log.d(TAG,"onCreate!");
+        mForceDataList = new HashMap<>();
+        mAccDataList = new HashMap<>();
+        mGyroDataList = new HashMap<>();
 
         mDBAthlete = new DBHelper(this);
         Intent intent = getIntent();
-        mForceDataList = intent.getIntegerArrayListExtra(FORCE_TEXT);
-        mAccDataList = intent.getIntegerArrayListExtra(ACCELEROMETER_TEXT);
-        mGyroDataList = intent.getIntegerArrayListExtra(GYROSCOPE_TEXT);
+        mForceDataList.put(FORCE_TEXT,intent.getIntegerArrayListExtra(FORCE_TEXT));
+        mForceDataList.put(FORCE_TIME_TEXT,intent.getIntegerArrayListExtra(FORCE_TIME_TEXT));
+        mAccDataList.put(ACCELEROMETER_TEXT,intent.getIntegerArrayListExtra(ACCELEROMETER_TEXT));
+        mAccDataList.put(ACC_TIME_TEXT,intent.getIntegerArrayListExtra(ACC_TIME_TEXT));
+        mGyroDataList.put(GYROSCOPE_TEXT,intent.getIntegerArrayListExtra(GYROSCOPE_TEXT));
+        mGyroDataList.put(GYRO_TIME_TEXT,intent.getIntegerArrayListExtra(GYRO_TIME_TEXT));
         mAthleteDataId = intent.getIntExtra(NewExerciseActivity.ATHLETE_ID,0);
-        mForceTime = intent.getIntegerArrayListExtra(FORCETIME_TEXT);
         mEnableSave = intent.getBooleanExtra(ENABLE_SAVE,true);
-        mGyroAccTime = intent.getIntegerArrayListExtra(ACCGYROTIME_TEXT);
         mAthleteFirstName = intent.getStringExtra(NewExerciseActivity.FIRST_NAME);
         mAthleteSurName = intent.getStringExtra(NewExerciseActivity.LAST_NAME);
         mTextAthleteFirstName = (TextView) findViewById(R.id.athletefirstName);
@@ -129,7 +141,15 @@ public class GraphingActivity extends AppCompatActivity {
         mSaveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                saveToDataBase();
+
+                if(saveToDataBase()){
+                    Toast toast = Toast.makeText(getApplicationContext(),"Saved to Database",Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else {
+                    Toast toast =Toast.makeText(getApplicationContext(),"Not able to save",Toast.LENGTH_SHORT);
+                    toast.show();
+                }
             }
         });
 
@@ -145,6 +165,7 @@ public class GraphingActivity extends AppCompatActivity {
         CreateView(mAccGraph, 33500f,-33500f, "Accelerometer Measurement");
         CreateView(mGyroGraph, 33500f,-33500f, "Gyroscope Measurement");
         mShootingCounter ++;
+        printData();
 
     }
     @Override
@@ -181,6 +202,19 @@ public class GraphingActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public void printData(){
+        Log.d(TAG,"Data in stock:   \n");
+        Log.d(TAG," ------------------------------  \n");
+        Log.d(TAG,FORCE_TEXT + ":   " + mForceDataList.get(FORCE_TEXT) + "\n");
+        Log.d(TAG,FORCE_TIME_TEXT + ":      " + mForceDataList.get(FORCE_TIME_TEXT) + "\n");
+        Log.d(TAG,ACCELEROMETER_TEXT + ":       " + mAccDataList.get(ACCELEROMETER_TEXT) + "\n");
+        Log.d(TAG,ACC_TIME_TEXT + ":            " + mAccDataList.get(ACC_TIME_TEXT) + "\n");
+        Log.d(TAG,GYROSCOPE_TEXT + ":           " + mGyroDataList.get(GYROSCOPE_TEXT) + "\n");
+        Log.d(TAG,GYRO_TIME_TEXT + ":           " + mGyroDataList.get(GYRO_TIME_TEXT) + "\n");
+        Log.d(TAG," ------------------------------  \n");
+
+    }
+
     public List<List<Integer>> convertToXYZData(ArrayList<Integer> data){
         List<Integer> Xdata = new ArrayList<>();
         List<Integer> Ydata = new ArrayList<>();
@@ -200,12 +234,12 @@ public class GraphingActivity extends AppCompatActivity {
     public void createSingleForceView(){
         List<Entry> forceData = new ArrayList<>();
         List<Float> measurementData = new ArrayList<>();
-        Log.d(TAG,"ForceMeasurement: " + mForceDataList);
-        Log.d(TAG,"ACC Measurement: " + mAccDataList);
-        Log.d(TAG,"Gyro Measurement: " + mGyroDataList);
-        Log.d(TAG,"Time Stamp: " + mForceTime);
-        for (int i =0;i<mForceDataList.size()-1;i++){
-            forceData.add(new Entry(mForceTime.get(i),mForceDataList.get(i)));
+
+        Log.d(TAG,"ForceData:   " + mForceDataList.get(FORCE_TEXT));
+        Log.d(TAG,"ForceTimeData:   " + mForceDataList.get(FORCE_TIME_TEXT));
+
+        for (int i =0;i<mForceDataList.get(FORCE_TIME_TEXT).size()-1;i++){
+            forceData.add(new Entry(mForceDataList.get(FORCE_TIME_TEXT).get(i),mForceDataList.get(FORCE_TEXT).get(i)));
         }
         LineDataSet set1 = new LineDataSet(forceData,"Force Measurement");
         set1.setDrawValues(false);
@@ -221,7 +255,7 @@ public class GraphingActivity extends AppCompatActivity {
 
 
     public void createSingleAccView(){
-        List<List<Integer>> convertedData = convertToXYZData(mAccDataList);
+        List<List<Integer>> convertedData = convertToXYZData(mAccDataList.get(ACCELEROMETER_TEXT));
         List<Integer> Xdata = convertedData.get(0);
         List<Integer> Ydata = convertedData.get(1);
         List<Integer> Zdata = convertedData.get(2);
@@ -231,11 +265,11 @@ public class GraphingActivity extends AppCompatActivity {
 
 
         Log.d(TAG,"ACC size: " + mAccDataList.size());
-        Log.d(TAG,"ACCTIme size:  " + mGyroAccTime.size());
-        for (int i =0;i<Xdata.size()-1;i++){
-            Entry xEntry = new Entry(mGyroAccTime.get(i),Xdata.get(i));
-            Entry yEntry = new Entry(mGyroAccTime.get(i),Ydata.get(i));
-            Entry zEntry = new Entry(mGyroAccTime.get(i),Zdata.get(i));
+        Log.d(TAG,"ACCTIme size:  " + mAccDataList.get(ACC_TIME_TEXT).size());
+        for (int i =0;i<Zdata.size()-1;i++){
+            Entry xEntry = new Entry(mAccDataList.get(ACC_TIME_TEXT).get(i),Xdata.get(i));
+            Entry yEntry = new Entry(mAccDataList.get(ACC_TIME_TEXT).get(i),Ydata.get(i));
+            Entry zEntry = new Entry(mAccDataList.get(ACC_TIME_TEXT).get(i),Zdata.get(i));
             xAxisData.add(xEntry);
             yAxisData.add(yEntry);
             zAxisData.add(zEntry);
@@ -270,7 +304,8 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
     public void createSingleGyroView(){
-        List<List<Integer>> convertedData = convertToXYZData(mGyroDataList);
+        List<List<Integer>> convertedData = convertToXYZData(mGyroDataList.get(GYROSCOPE_TEXT));
+        ArrayList<Integer> time = mGyroDataList.get(GYRO_TIME_TEXT);
         List<Integer> Xdata = convertedData.get(0);
         List<Integer> Ydata = convertedData.get(1);
         List<Integer> Zdata = convertedData.get(2);
@@ -279,11 +314,11 @@ public class GraphingActivity extends AppCompatActivity {
         List<Entry> zAxisData = new ArrayList<>();
 
         Log.d(TAG,"GyroData Size: " + mGyroDataList.size());
-        Log.d(TAG,"Gyro Time Size: " + mGyroAccTime.size());
+        Log.d(TAG,"Gyro Time Size: " + mGyroDataList.get(GYRO_TIME_TEXT).size());
         for (int i =0;i<Xdata.size()-1;i++){
-            Entry xEntry = new Entry(mGyroAccTime.get(i),Xdata.get(i));
-            Entry yEntry = new Entry(mGyroAccTime.get(i),Ydata.get(i));
-            Entry zEntry = new Entry(mGyroAccTime.get(i),Zdata.get(i));
+            Entry xEntry = new Entry(time.get(i),Xdata.get(i));
+            Entry yEntry = new Entry(time.get(i),Ydata.get(i));
+            Entry zEntry = new Entry(time.get(i),Zdata.get(i));
             xAxisData.add(xEntry);
             yAxisData.add(yEntry);
             zAxisData.add(zEntry);
@@ -327,44 +362,87 @@ public class GraphingActivity extends AppCompatActivity {
         shooting.setDate(stringDate);
         shooting.setNumberOfShootings(numberOfShootings());
         shooting.set_id(mShootings.size() + 1);
-        shooting.setFilename(saveFile(jsonObject,stringDate));
         shooting.setShootingDescriptor(mDescriptorText.getText().toString());
         shooting.setAthlete_id(mAthleteDataId);
         shooting.printShootingData();
+        shooting.setFilename(saveFile(jsonObject,stringDate, shooting.getShootingDescriptor()));
+
+
         mDBAthlete.createShooting(shooting,mAthleteDataId);
+
 
         return true;
     }
-    public String saveFile(JSONObject jsonObject,String date){
-        String filename =  mAthleteFirstName + mAthleteSurName + date + ".txt";
-        Context context = getApplicationContext();
-        File file = new File(context.getFilesDir(),filename);
+    public String saveFile(JSONObject jsonObject,String date, String description){
+        String filename =  mAthleteFirstName + mAthleteSurName + description + date + ".txt";
+        String directoryName = mAthleteFirstName + mAthleteSurName;
+        Log.w(TAG,"IsExternalStorageWritable?   " + isExternalStorageWritable());
+        File dir;
+        if (isExternalStorageWritable()) {
+            dir = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),directoryName);
+            if (!dir.mkdir()){
+                Log.e(TAG,"directory not created");
+            }
+            Log.d(TAG,"root path    -----       " + dir.getPath());
+
+        }else {
+            Toast toast = Toast.makeText(getApplicationContext(),"External Storage not writeable, saving to Internal memory",Toast.LENGTH_LONG);
+            toast.show();
+            dir = new File(getFilesDir(), directoryName);
+        }
+
+        File file = new File(dir, filename);
+        if(file.exists()) file.delete();
         Log.d(TAG,"Saving file : " + filename + "\n" +
             " to Path: " + file.getAbsolutePath());
 
+
+        File listFile = getFilesDir();
+        for (File f : listFile.listFiles()){
+            Log.d(TAG,"File in filesdir:    " + f.toString());
+        }
         try {
-            FileWriter out = new FileWriter(file);
-            out.write(jsonObject.toString());
-            out.close();
+            file.createNewFile();
+            FileOutputStream f = new FileOutputStream(file);
+            OutputStreamWriter ow = new OutputStreamWriter(f);
+            ow.append(jsonObject.toString());
+            ow.close();
+            f.flush();
+            f.close();
         }catch (Exception e){
             e.printStackTrace();
         }
         return filename;
     }
 
+    public boolean isExternalStorageWritable(){
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)){
+            return true;
+        }
+        return false;
+    }
+
+    public File getExternalStorageDir(String fileName){
+        File file = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),fileName);
+        if (!file.mkdir()){
+            Log.e(TAG,"Directory not created!");
+
+        }
+
+        return file;
+    }
+
     public JSONObject makeJSONObject(){
         JSONObject jsonObject = new JSONObject();
-        String forceData = mForceDataList.toString();
-        String AccData = mAccDataList.toString();
-        String GyroData = mGyroDataList.toString();
-        String ForceTime = mForceTime.toString();
-        String AccGyroTime = mGyroAccTime.toString();
+
         try{
-            jsonObject.put(FORCE_TEXT,forceData);
-            jsonObject.put(ACCELEROMETER_TEXT,AccData);
-            jsonObject.put(GYROSCOPE_TEXT,GyroData);
-            jsonObject.put(FORCETIME_TEXT,ForceTime);
-            jsonObject.put(ACCGYROTIME_TEXT,AccGyroTime);
+            jsonObject.put(FORCE_TEXT,mForceDataList.get(FORCE_TEXT).toString() + "\n");
+            jsonObject.put(FORCE_TIME_TEXT,mForceDataList.get(FORCE_TIME_TEXT).toString() + "\n");
+            jsonObject.put(ACCELEROMETER_TEXT,mAccDataList.get(ACCELEROMETER_TEXT).toString() + "\n");
+            jsonObject.put(ACC_TIME_TEXT,mAccDataList.get(ACC_TIME_TEXT).toString() + "\n");
+            jsonObject.put(GYROSCOPE_TEXT,mGyroDataList.get(GYROSCOPE_TEXT).toString() + "\n");
+            jsonObject.put(GYRO_TIME_TEXT,mGyroDataList.get(GYRO_TIME_TEXT).toString() + "\n");
 
         }catch (JSONException e){
             e.printStackTrace();

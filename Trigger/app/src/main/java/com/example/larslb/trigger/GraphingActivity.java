@@ -59,6 +59,7 @@ import android.widget.ViewFlipper;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.Description;
+import com.github.mikephil.charting.components.LimitLine;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -91,7 +92,7 @@ public class GraphingActivity extends AppCompatActivity {
     HashMap<String,ArrayList<Integer>> mForceDataList;
     HashMap<String,ArrayList<Integer>> mGyroDataList;
     HashMap<String,ArrayList<Integer>> mAccDataList;
-    ArrayList<Integer> mForceTime;
+    ArrayList<Integer> mShotsFired;
     ArrayList<Integer> mAccTime;
     ArrayList<Integer> mGyroTime;
 
@@ -110,6 +111,7 @@ public class GraphingActivity extends AppCompatActivity {
     public static final String ACC_TIME_TEXT = "ACC_TIME";
     public static final String GYRO_TIME_TEXT = "GYRO_TIME";
     public static final String ENABLE_SAVE = "ENABLE_SAVE";
+    public static final String SHOT_LINES = "SHOT_LINES";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,6 +121,7 @@ public class GraphingActivity extends AppCompatActivity {
         mForceDataList = new HashMap<>();
         mAccDataList = new HashMap<>();
         mGyroDataList = new HashMap<>();
+
 
         mDBAthlete = new DBHelper(this);
         Intent intent = getIntent();
@@ -154,7 +157,7 @@ public class GraphingActivity extends AppCompatActivity {
         });
 
         mShootings = mDBAthlete.getAllShootings();
-
+        mShotsFired = shotDetection();
 
         mFlipper = (ViewFlipper) findViewById(R.id.GraphFlipper);
         mForceGraph = (LineChart) findViewById(R.id.SingleForceGraph);
@@ -165,7 +168,7 @@ public class GraphingActivity extends AppCompatActivity {
         CreateView(mAccGraph, 33500f,-33500f, "Accelerometer Measurement");
         CreateView(mGyroGraph, 33500f,-33500f, "Gyroscope Measurement");
         mShootingCounter ++;
-        printData();
+        //printData();
 
     }
     @Override
@@ -205,6 +208,7 @@ public class GraphingActivity extends AppCompatActivity {
     public void printData(){
         Log.d(TAG,"Data in stock:   \n");
         Log.d(TAG," ------------------------------  \n");
+        Log.d(TAG," ------------------------------  \n");
         Log.d(TAG,FORCE_TEXT + ":   " + mForceDataList.get(FORCE_TEXT) + "\n");
         Log.d(TAG,FORCE_TIME_TEXT + ":      " + mForceDataList.get(FORCE_TIME_TEXT) + "\n");
         Log.d(TAG,ACCELEROMETER_TEXT + ":       " + mAccDataList.get(ACCELEROMETER_TEXT) + "\n");
@@ -213,6 +217,54 @@ public class GraphingActivity extends AppCompatActivity {
         Log.d(TAG,GYRO_TIME_TEXT + ":           " + mGyroDataList.get(GYRO_TIME_TEXT) + "\n");
         Log.d(TAG," ------------------------------  \n");
 
+    }
+
+    public ArrayList<Integer> derivate(ArrayList<Integer> data, int deltaT){
+        ArrayList<Integer> derivData = new ArrayList<>();
+        for (int i =0;i<data.size()-1;i++){
+            derivData.add((data.get(i+1) - data.get(i))/deltaT);
+        }
+        return derivData;
+    }
+
+    public ArrayList<Integer> shotDetection(){
+        Log.d(TAG, "derivates:  " + derivate(mAccDataList.get(ACCELEROMETER_TEXT), mAccDataList.get(ACC_TIME_TEXT).get(2) - mAccDataList.get(ACC_TIME_TEXT).get(1)));
+        ArrayList<Integer> firedShots = new ArrayList<>();
+        ArrayList<Integer> candidatesTimeStamp = new ArrayList<>();
+        int counter = 0;
+        for (int i = 2;i<mAccDataList.get(ACCELEROMETER_TEXT).size();i+=3){
+            counter ++;
+            int z_data = mAccDataList.get(ACCELEROMETER_TEXT).get(i);
+            if (z_data<-1500) {
+                candidatesTimeStamp.add(counter*10);
+            }
+        }
+        Log.d(TAG,"TimeStamp Candidates:        " + candidatesTimeStamp);
+        Log.d(TAG,"ForceTimeData   :            " + mForceDataList.get(FORCE_TIME_TEXT) );
+        for (int timeStamp : candidatesTimeStamp){
+            int forceIndex = mForceDataList.get(FORCE_TIME_TEXT).indexOf(timeStamp);
+            if (forceIndex > 0){
+                if (mForceDataList.get(FORCE_TEXT).get(forceIndex) > 150){
+                    firedShots.add(timeStamp);
+                }
+            }
+        }
+
+        Log.d(TAG,"FiredShots   " + firedShots);
+
+        return firedShots;
+    }
+
+    public void setShotDetection(LineChart Chart){
+        if (mShotsFired.size() > 0) {
+            XAxis leftAxis = Chart.getXAxis();
+            for (int data : mShotsFired) {
+                LimitLine ll = new LimitLine(data);
+                ll.setLineColor(Color.DKGRAY);
+                ll.setLineWidth(1f);
+                leftAxis.addLimitLine(ll);
+            }
+        }
     }
 
     public List<List<Integer>> convertToXYZData(ArrayList<Integer> data){
@@ -238,17 +290,20 @@ public class GraphingActivity extends AppCompatActivity {
         Log.d(TAG,"ForceData:   " + mForceDataList.get(FORCE_TEXT));
         Log.d(TAG,"ForceTimeData:   " + mForceDataList.get(FORCE_TIME_TEXT));
 
-        for (int i =0;i<mForceDataList.get(FORCE_TIME_TEXT).size()-1;i++){
+        for (int i=0;i<mForceDataList.get(FORCE_TIME_TEXT).size()-1;i++){
             forceData.add(new Entry(mForceDataList.get(FORCE_TIME_TEXT).get(i),mForceDataList.get(FORCE_TEXT).get(i)));
         }
+
         LineDataSet set1 = new LineDataSet(forceData,"Force Measurement");
         set1.setDrawValues(false);
         set1.setDrawCircles(false);
         set1.setDrawFilled(true);
         set1.setAxisDependency(YAxis.AxisDependency.LEFT);
         LineData data = new LineData(set1);
+
         mForceGraph.setData(data);
         mForceGraph.invalidate();
+        setShotDetection(mForceGraph);
 
     }
 
@@ -295,12 +350,15 @@ public class GraphingActivity extends AppCompatActivity {
         dataSets.add(zDataset);
 
         LineData lineData = new LineData(dataSets);
+
         mAccGraph.setData(lineData);
         mAccGraph.invalidate();
+        setShotDetection(mAccGraph);
+
     }
 
     public int numberOfShootings(){
-     return 1; //TODO: implement detection of shootings
+     return mShotsFired.size();
     }
 
     public void createSingleGyroView(){
@@ -346,6 +404,9 @@ public class GraphingActivity extends AppCompatActivity {
         LineData lineData = new LineData(dataSets);
         mGyroGraph.setData(lineData);
         mGyroGraph.invalidate();
+        setShotDetection(mGyroGraph);
+
+
     }
 
     public boolean saveToDataBase(){
@@ -443,6 +504,7 @@ public class GraphingActivity extends AppCompatActivity {
             jsonObject.put(ACC_TIME_TEXT,mAccDataList.get(ACC_TIME_TEXT).toString() + "\n");
             jsonObject.put(GYROSCOPE_TEXT,mGyroDataList.get(GYROSCOPE_TEXT).toString() + "\n");
             jsonObject.put(GYRO_TIME_TEXT,mGyroDataList.get(GYRO_TIME_TEXT).toString() + "\n");
+            jsonObject.put(SHOT_LINES,mShotsFired.toString() + "\n");
 
         }catch (JSONException e){
             e.printStackTrace();

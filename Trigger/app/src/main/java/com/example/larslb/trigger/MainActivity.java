@@ -128,12 +128,6 @@ public class MainActivity extends AppCompatActivity {
                 loadData();
                 mDrawerList.setItemChecked(pos,true);
                 break;
-            case "Options":
-                mDrawerList.setItemChecked(pos,true);
-                break;
-            case "Test":
-                startScann();
-                mDrawerList.setItemChecked(pos,true);
             default:
                 mDrawerList.setItemChecked(pos,false);
                 break;

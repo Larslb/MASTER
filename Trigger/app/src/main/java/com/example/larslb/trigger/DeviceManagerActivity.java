@@ -211,6 +211,10 @@ public class DeviceManagerActivity extends AppCompatActivity {
         graphingintent.putIntegerArrayListExtra(GraphingActivity.ACC_TIME_TEXT,mAccTimeData);
         graphingintent.putIntegerArrayListExtra(GraphingActivity.GYROSCOPE_TEXT,mGyroData);
         graphingintent.putIntegerArrayListExtra(GraphingActivity.GYRO_TIME_TEXT,mGyroTimeData);
+        Log.d(TAG, "Lengths : ------------------- \n");
+        Log.d(TAG, "Force: " + mForceData.size() + " \nForceTime: " + mForceTimeData.size()
+        + "\nAcc: " + mAccData.size() +  "     \nAccTime: " + mAccTimeData.size() +
+        "       \nGyro: " + mGyroData.size() + "      \nGyroTime:   " + mGyroTimeData.size());
 
         startActivity(graphingintent);
     }
@@ -472,9 +476,9 @@ public class DeviceManagerActivity extends AppCompatActivity {
             stringBuilder.append(convertToUint16((barray[i+1] & 0xFF), (barray[i+2] & 0xFF)));
             stringBuilder.append(",");
             */
-            Integer timeInt = (barray[i] & 0xFF);
-            timeintArray.add(timeInt);
-            mForceTimeData.add(timeInt);
+            Integer delta_t = (barray[i] & 0xFF);
+            timeintArray.add(delta_t);
+            mForceTimeData.add(delta_t*mForceTimeData.size());
             Integer convertedInt =convertToUint16((barray[i+1] & 0xFF), (barray[i+2] & 0xFF));
             mForceData.add(convertedInt);
             intarray.add(convertedInt);
@@ -501,7 +505,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
             intarray.add(convertedX);
             intarray.add(convertedY);
             intarray.add(convertedZ);
-            mAccTimeData.add(Time);
+            mAccTimeData.add(Time * mAccTimeData.size());
             mAccData.add(convertedX);
             mAccData.add(convertedY);
             mAccData.add(convertedZ);
@@ -536,7 +540,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
             intarray.add(convertedX);
             intarray.add(convertedY);
             intarray.add(convertedZ);
-            mGyroTimeData.add(Time);
+            mGyroTimeData.add(Time * mGyroTimeData.size());
             mGyroData.add(convertedX);
             mGyroData.add(convertedY);
             mGyroData.add(convertedZ);

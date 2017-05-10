@@ -440,6 +440,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         HashMap<String,ArrayList<Integer>> compactQueueData;
         byte[] measurement;
         if (data!=null){
+
             if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.FORCE_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,18);
                 compactQueueData = forceBytearray2intarray(measurement);
@@ -449,7 +450,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.ACC_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,14);
-                //Log.d(TAG,"ACC Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
                 ArrayList<Integer> array = AccBytearray2intarray(measurement);
 
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.GYRO_ATTRIBUTE))){
@@ -715,7 +715,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
                     continue;
                 }
                 if ((order = mQueue.poll()) != null) {
-                    Log.d(TAG,"Values to be plotted:     " + order);
                     addEntry(order.get(GraphingActivity.FORCE_TEXT),order.get(GraphingActivity.FORCE_TIME_TEXT));
                 }
 

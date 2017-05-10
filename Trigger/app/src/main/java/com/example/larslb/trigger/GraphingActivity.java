@@ -25,6 +25,7 @@ import java.text.DateFormat;
 import java.text.FieldPosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.lang.Math;
 
 
 import android.app.Fragment;
@@ -75,6 +76,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static android.R.attr.max;
+import static android.R.attr.x;
+
 public class GraphingActivity extends AppCompatActivity {
     private static final String TAG = GraphingActivity.class.getSimpleName();
 
@@ -95,6 +99,7 @@ public class GraphingActivity extends AppCompatActivity {
     ArrayList<Integer> mShotsFired;
     ArrayList<Integer> mAccTime;
     ArrayList<Integer> mGyroTime;
+    ArrayList<Integer> mFiredShots;
 
     private int mAthleteDataId;
     private int mShootingCounter = 0;
@@ -121,6 +126,7 @@ public class GraphingActivity extends AppCompatActivity {
         mForceDataList = new HashMap<>();
         mAccDataList = new HashMap<>();
         mGyroDataList = new HashMap<>();
+
 
 
         mDBAthlete = new DBHelper(this);
@@ -229,32 +235,115 @@ public class GraphingActivity extends AppCompatActivity {
 
     public ArrayList<Integer> shotDetection(){
         Log.d(TAG, "derivates:  " + derivate(mAccDataList.get(ACCELEROMETER_TEXT), mAccDataList.get(ACC_TIME_TEXT).get(2) - mAccDataList.get(ACC_TIME_TEXT).get(1)));
+        ArrayList<Integer> candidatesForceTimeStamp = new ArrayList<>();
         ArrayList<Integer> firedShots = new ArrayList<>();
-        ArrayList<Integer> candidatesTimeStamp = new ArrayList<>();
-        int counter = 0;
-        for (int i = 2;i<mAccDataList.get(ACCELEROMETER_TEXT).size();i+=3){
-            counter ++;
-            int z_data = mAccDataList.get(ACCELEROMETER_TEXT).get(i);
-            if (z_data<-1500) {
-                candidatesTimeStamp.add(counter*10);
-            }
-        }
-        Log.d(TAG,"TimeStamp Candidates:        " + candidatesTimeStamp);
-        Log.d(TAG,"ForceTimeData   :            " + mForceDataList.get(FORCE_TIME_TEXT) );
-        for (int timeStamp : candidatesTimeStamp){
-            int forceIndex = mForceDataList.get(FORCE_TIME_TEXT).indexOf(timeStamp);
-            if (forceIndex > 0){
-                if (mForceDataList.get(FORCE_TEXT).get(forceIndex) > 150){
-                    firedShots.add(timeStamp);
-                }
+        ArrayList<Integer> ForceDataOver150 = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> intervalTimeShots = new ArrayList<>();
+        List<Integer> zAxisData = convertToXYZData(mAccDataList.get(ACCELEROMETER_TEXT)).get(2);
+        ArrayList<Integer> zTimeData = mAccDataList.get(ACC_TIME_TEXT);
+
+        for (int i=0;i<mForceDataList.get(FORCE_TEXT).size();i++){
+            if (mForceDataList.get(FORCE_TEXT).get(i) > 150){
+                ForceDataOver150.add(mForceDataList.get(FORCE_TEXT).get(i));
+                candidatesForceTimeStamp.add(mForceDataList.get(FORCE_TIME_TEXT).get(i));
             }
         }
 
+
+        Log.d(TAG,"Force data:     " +  ForceDataOver150);
+        Log.d(TAG,"Force Time stamps:   " +candidatesForceTimeStamp);
+
+        ArrayList<Integer> intervalTime = new ArrayList<>();
+        for (int t=0;t< candidatesForceTimeStamp.size()-1;t++){
+            int t_0 = candidatesForceTimeStamp.get(t);
+            int t_1 = candidatesForceTimeStamp.get(t+1);
+
+            if ((t_1 - t_0) < 11 ){
+                if (!intervalTime.contains(t_0) ){
+                        intervalTime.add(t_0);
+                    }
+                    if(!intervalTime.contains(t_1)){
+                        intervalTime.add(t_1);
+                    }
+            }else{
+                intervalTimeShots.add(intervalTime);
+                intervalTime = new ArrayList<>();
+            }
+        }
+        intervalTimeShots.add(intervalTime);
+        Log.d(TAG,"Intevals:    " + intervalTimeShots.size());
+
+        for (ArrayList<Integer> interval : intervalTimeShots) {
+            int timeMinAcc = 0;
+            if (!interval.isEmpty()) {
+                for (int t = interval.get(0); t < interval.get(interval.size() - 1); t++) {
+                    int minAccData = 0;
+                    int accZIndex = zTimeData.indexOf(t);
+                    if (accZIndex > 0) {
+                        if ((zAxisData.get(accZIndex) < -1500) && (zAxisData.get(accZIndex) < minAccData)) {
+                            minAccData = zAxisData.get(accZIndex);
+                            timeMinAcc = t;
+                        }
+                    }
+                }
+                if (!firedShots.contains(timeMinAcc))
+                    firedShots.add(timeMinAcc);
+            }
+        }
+
+        Log.d(TAG,"FiredShots at:  " + firedShots);
+                /*
+        Log.d(TAG,"zData:   " + zAxisData);
+        Log.d(TAG,"zTimeData:   " + zTimeData);
+        for (int z : zAxisData){
+            if (z < -1500){
+                candidatesForceTimeStamp.add(zAxisData.indexOf(z)*10);
+                candidatesAccTimeStamp.add(zAxisData.indexOf(z) *11);
+            }
+        }
+        Log.d(TAG,"TimeStamp for Force Candidates:        " + candidatesForceTimeStamp);
+        Log.d(TAG,"TimeStamp for Acc Candidates:        " + candidatesAccTimeStamp);
+        Log.d(TAG,"ForceTimeData   :            " + mForceDataList.get(FORCE_TIME_TEXT) );
+        for (int timeStamp = 0; timeStamp<candidatesForceTimeStamp.size()-1;timeStamp ++){
+            int forceIndex = mForceDataList.get(FORCE_TIME_TEXT).indexOf(candidatesForceTimeStamp.get(timeStamp));
+            if (mForceDataList.get(FORCE_TEXT).get(forceIndex) > 150){
+                firedShots.add(timeStamp);
+            }
+        }
+
+        for (int t = 0; t<firedShots.size()-1;t++){
+            if (firedShots.get(t+1) - firedShots.get(t) < 2000){
+                int index_T1 = zTimeData.indexOf(firedShots.get(t+1));
+                int index_T0 = zTimeData.indexOf(firedShots.get(t));
+
+                if (zAxisData.get(index_T0) < zAxisData.get(index_T1)){
+                    firedShots.remove(t);
+                }
+            }
+        }
         Log.d(TAG,"FiredShots   " + firedShots);
+        */
 
         return firedShots;
     }
 
+    public ArrayList<Integer> demux(ArrayList<Integer> ShotFiredTimeStamps){
+        ArrayList<Integer> shortedShots = new ArrayList<>();
+        int minAcc = 0;
+        for (int i=0;i<ShotFiredTimeStamps.size()-1;i++){
+            int t_1 = ShotFiredTimeStamps.get(i+1);
+            int t_0 = ShotFiredTimeStamps.get(i);
+            if (ShotFiredTimeStamps.get(i+1) -  ShotFiredTimeStamps.get(i) < 2000){
+
+                int min = Math.min(mAccDataList.get(ACCELEROMETER_TEXT).get(ShotFiredTimeStamps.get(i+1)),
+                        mAccDataList.get(ACCELEROMETER_TEXT).get(ShotFiredTimeStamps.get(i)));
+                if (min < minAcc){
+                    minAcc = min;
+                }
+            }
+        }
+        return shortedShots;
+    }
     public void setShotDetection(LineChart Chart){
         if (mShotsFired.size() > 0) {
             XAxis leftAxis = Chart.getXAxis();
@@ -381,6 +470,7 @@ public class GraphingActivity extends AppCompatActivity {
             yAxisData.add(yEntry);
             zAxisData.add(zEntry);
         }
+
         LineDataSet xDataset = new LineDataSet(xAxisData,"X-Axis");
         xDataset.setDrawValues(false);
         xDataset.setDrawCircles(false);
@@ -406,7 +496,6 @@ public class GraphingActivity extends AppCompatActivity {
         mGyroGraph.invalidate();
         setShotDetection(mGyroGraph);
 
-
     }
 
     public boolean saveToDataBase(){
@@ -414,7 +503,6 @@ public class GraphingActivity extends AppCompatActivity {
             Log.d(TAG,"TEST is not part of DB");
             return false;
         }
-
 
         JSONObject jsonObject = makeJSONObject();
         ShootingData shooting = new ShootingData();
@@ -427,7 +515,6 @@ public class GraphingActivity extends AppCompatActivity {
         shooting.setAthlete_id(mAthleteDataId);
         shooting.printShootingData();
         shooting.setFilename(saveFile(jsonObject,stringDate, shooting.getShootingDescriptor()));
-
 
         mDBAthlete.createShooting(shooting,mAthleteDataId);
 

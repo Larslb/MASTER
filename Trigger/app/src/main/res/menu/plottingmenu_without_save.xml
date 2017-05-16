@@ -2,6 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     >
 
+    <item android:id="@+id/Home"
+        android:title="Home"
+        />
     <item android:id="@+id/Force"
         android:title="@string/Force"
         />

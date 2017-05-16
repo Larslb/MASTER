@@ -6,7 +6,8 @@
     android:gravity="center_vertical"
     android:paddingLeft="16dp"
     android:paddingRight="16dp"
-    android:textColor="@android:color/holo_blue_bright"
+    android:textColor="@android:color/white"
+    android:textColorHighlight="@color/colorPrimaryDark"
     android:background="?android:attr/activatedBackgroundIndicator"
     android:minHeight="?android:attr/listPreferredItemHeightSmall"
     >

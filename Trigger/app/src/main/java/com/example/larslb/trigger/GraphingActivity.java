@@ -77,6 +77,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import static android.R.attr.max;
+import static android.R.attr.theme;
 import static android.R.attr.x;
 
 public class GraphingActivity extends AppCompatActivity {
@@ -169,6 +170,12 @@ public class GraphingActivity extends AppCompatActivity {
         mForceGraph = (LineChart) findViewById(R.id.SingleForceGraph);
         mAccGraph = (LineChart) findViewById(R.id.SingleAccGraph);
         mGyroGraph = (LineChart) findViewById(R.id.SingleGyroGraph);
+        TextView shotsfiredText = (TextView) findViewById(R.id.shotsfiredText);
+        if (mShotsFired.isEmpty()){
+            shotsfiredText.setText("No Shots Detected!");
+        }else{
+            shotsfiredText.setText(shotStringmaker());
+        }
 
         CreateView(mForceGraph,300f,-10f, "Force Measurement");
         CreateView(mAccGraph, 33500f,-33500f, "Accelerometer Measurement");
@@ -189,6 +196,10 @@ public class GraphingActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
+
+            case R.id.Home:
+                mFlipper.setDisplayedChild(0);
+                break;
             case R.id.Force:
                 mFlipper.setDisplayedChild(1);
                 createSingleForceView();
@@ -225,6 +236,20 @@ public class GraphingActivity extends AppCompatActivity {
 
     }
 
+    public String shotStringmaker(){
+        StringBuilder resString = new StringBuilder();
+        double firstFired = (mShotsFired.get(0));
+        double firstFiredTime = firstFired / 1000;
+        resString.append("1:    " + firstFiredTime + " Seconds\n");
+        for (int i=0;i<mShotsFired.size()-1;i++){
+            double time = mShotsFired.get(i+1) - mShotsFired.get(i);
+            double t = time/1000;
+            resString.append(i+2 + ":    " + t  + " Seconds\n");
+        }
+
+        return resString.toString();
+    }
+
     public ArrayList<Integer> derivate(ArrayList<Integer> data, int deltaT){
         ArrayList<Integer> derivData = new ArrayList<>();
         for (int i =0;i<data.size()-1;i++){
@@ -234,7 +259,6 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
     public ArrayList<Integer> shotDetection(){
-        Log.d(TAG, "derivates:  " + derivate(mAccDataList.get(ACCELEROMETER_TEXT), mAccDataList.get(ACC_TIME_TEXT).get(2) - mAccDataList.get(ACC_TIME_TEXT).get(1)));
         ArrayList<Integer> candidatesForceTimeStamp = new ArrayList<>();
         ArrayList<Integer> firedShots = new ArrayList<>();
         ArrayList<Integer> ForceDataOver150 = new ArrayList<>();
@@ -286,7 +310,7 @@ public class GraphingActivity extends AppCompatActivity {
                         }
                     }
                 }
-                if (!firedShots.contains(timeMinAcc))
+                if (!firedShots.contains(timeMinAcc) || timeMinAcc != 0)
                     firedShots.add(timeMinAcc);
             }
         }
@@ -387,6 +411,8 @@ public class GraphingActivity extends AppCompatActivity {
         set1.setDrawValues(false);
         set1.setDrawCircles(false);
         set1.setDrawFilled(true);
+        set1.setColor(Color.GRAY);
+        set1.setFillColor(Color.rgb(149, 43, 29));
         set1.setAxisDependency(YAxis.AxisDependency.LEFT);
         LineData data = new LineData(set1);
 
@@ -609,7 +635,7 @@ public class GraphingActivity extends AppCompatActivity {
         chart.setDrawGridBackground(false);
         chart.setPinchZoom(false);
         chart.setScaleXEnabled(true);
-        chart.setBackgroundColor(Color.rgb(102,209,255));
+        chart.setBackgroundColor(Color.WHITE);
         Description description = new Description();
         description.setText(name);
         chart.setDescription(description);
@@ -618,14 +644,14 @@ public class GraphingActivity extends AppCompatActivity {
 
         XAxis xl = chart.getXAxis();
         xl.setTypeface(Typeface.DEFAULT);
-        xl.setTextColor(Color.WHITE);
+        xl.setTextColor(Color.BLACK);
         xl.setDrawGridLines(false);
         xl.setAvoidFirstLastClipping(true);
         xl.setEnabled(true);
 
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setTypeface(Typeface.DEFAULT);
-        leftAxis.setTextColor(Color.WHITE);
+        leftAxis.setTextColor(Color.BLACK);
         leftAxis.setAxisMaximum(Ymax);
         leftAxis.setAxisMinimum(Ymin);
         leftAxis.setDrawGridLines(true);

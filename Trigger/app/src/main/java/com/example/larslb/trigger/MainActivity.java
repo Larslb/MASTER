@@ -1,32 +1,17 @@
 package com.example.larslb.trigger;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
 
-import com.example.larslb.trigger.DeviceScanActivity;
-import com.example.larslb.trigger.LoadDataActivity;
-import com.example.larslb.trigger.NewExerciseActivity;
-import com.example.larslb.trigger.R;
-
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Locale;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -43,12 +28,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Calendar calendar = new GregorianCalendar(Locale.GERMANY);
-        Date trialTime = new Date();
-        calendar.setTime(trialTime);
-
-        int timeNow = calendar.get(Calendar.MILLISECOND);
-        Log.d("MainActivity","Time: " + timeNow);
 
         mNavTitles = getResources().getStringArray(R.array.nav_titles_array);
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -147,17 +126,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void startScann(){
-        Intent scanIntent = new Intent(this,DeviceScanActivity.class);
-        scanIntent.putExtra(NewExerciseActivity.FIRST_NAME, "Test");
-        scanIntent.putExtra(NewExerciseActivity.LAST_NAME,"Test");
-        startActivity(scanIntent);
-    }
-
     public void startNewExercise(){
         Intent newExerciseIntent = new Intent(this,NewExerciseActivity.class);
         startActivity(newExerciseIntent);
     }
+
 }
 
 

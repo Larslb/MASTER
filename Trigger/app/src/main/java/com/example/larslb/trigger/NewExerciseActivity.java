@@ -2,38 +2,26 @@ package com.example.larslb.trigger;
 
 import android.app.Activity;
 import android.app.FragmentManager;
-import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-
-import static com.example.larslb.trigger.R.id.activity_new_exercise;
 
 public class NewExerciseActivity extends Activity  {
     private static final String TAG = NewExerciseActivity.class.getSimpleName();
@@ -90,9 +78,6 @@ public class NewExerciseActivity extends Activity  {
         mAthleteList = mAthleteDB.getAllAthletes();
         Log.d(TAG,"mAThLETeLIST;: " + mAthleteList.toString());
         mAdapter = new arrayListAdapter(this,mAthleteList);
-        //mAdapter = new SimpleAdapter(this,
-         //       mAthleteList,
-         //       R.layout.data_list,new String[] {"FirstName", "SurName"},new int[]{R.id.name1, R.id.name2});
         mDataList.setAdapter(mAdapter);
 
         registerForContextMenu(mDataList);
@@ -153,7 +138,6 @@ public class NewExerciseActivity extends Activity  {
             menu.add(Menu.NONE,R.id.changeName,Menu.NONE,"Change Name");
             menu.add(Menu.NONE,R.id.delete,Menu.NONE,"Delete");
         }
-
     }
 
     @Override
@@ -173,9 +157,9 @@ public class NewExerciseActivity extends Activity  {
     }
 
 
-    public class arrayListAdapter extends ArrayAdapter<AthleteData> {
+    private static class arrayListAdapter extends ArrayAdapter<AthleteData> {
 
-        public arrayListAdapter(Context context, ArrayList<AthleteData> athletes){
+        private arrayListAdapter(Context context, ArrayList<AthleteData> athletes){
             super(context,0,athletes);
         }
 

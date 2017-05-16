@@ -50,6 +50,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import static android.R.attr.color;
+import static android.R.attr.fillColor;
+import static android.R.attr.ignoreGravity;
 import static android.R.attr.max;
 import static android.R.attr.shareInterpolator;
 
@@ -282,7 +285,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         lineChart.setScaleEnabled(true);
         lineChart.setDrawGridBackground(false);
         lineChart.setPinchZoom(true);
-        lineChart.setBackgroundColor(Color.rgb(102,209,255));
+        lineChart.setBackgroundColor(Color.WHITE);
         Description description = new Description();
         description.setText(name);
         lineChart.setDescription(description);
@@ -305,7 +308,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
             datasets.add(set);
         }
         LineData lineData = new LineData(datasets);
-        lineData.setValueTextColor(Color.rgb(0,89,255));
+        lineData.setValueTextColor(R.color.colorPrimary);
         lineChart.setData(lineData);
 
 
@@ -323,7 +326,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
         YAxis leftAxis = lineChart.getAxisLeft();
         leftAxis.setTypeface(Typeface.DEFAULT);
-        leftAxis.setTextColor(Color.WHITE);
+        leftAxis.setTextColor(Color.BLACK);
         leftAxis.setAxisMaximum(Ymax);
         leftAxis.setAxisMinimum(Ymin);
         leftAxis.setDrawGridLines(true);
@@ -341,11 +344,11 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
         LineDataSet set = new LineDataSet(null, name);
         set.setAxisDependency(YAxis.AxisDependency.LEFT);
-        set.setColor(ColorTemplate.getHoloBlue());
+        set.setColor(Color.GRAY);
         set.setLineWidth(2f);
         set.setDrawFilled(true);
-        set.setFillAlpha(65);
-        set.setFillColor(ColorTemplate.getHoloBlue());
+        set.setFillAlpha(75);
+        set.setFillColor(Color.rgb(149, 43, 29));
         set.setHighLightColor(Color.rgb(244, 117, 117));
         return set;
     }
@@ -478,7 +481,12 @@ public class DeviceManagerActivity extends AppCompatActivity {
             */
             Integer delta_t = (barray[i] & 0xFF);
             timeintArray.add(delta_t);
-            mForceTimeData.add(delta_t*mForceTimeData.size());
+            if (mForceTimeData.isEmpty()){
+                mForceTimeData.add(0);
+            }else{
+                mForceTimeData.add(delta_t + mForceTimeData.get(mForceTimeData.size()-1));
+            }
+
             Integer convertedInt =convertToUint16((barray[i+1] & 0xFF), (barray[i+2] & 0xFF));
             mForceData.add(convertedInt);
             intarray.add(convertedInt);
@@ -505,7 +513,14 @@ public class DeviceManagerActivity extends AppCompatActivity {
             intarray.add(convertedX);
             intarray.add(convertedY);
             intarray.add(convertedZ);
-            mAccTimeData.add(Time * mAccTimeData.size());
+
+
+
+            if (mAccTimeData.isEmpty()){
+                mAccTimeData.add(0);
+            }else {
+                mAccTimeData.add(Time + mAccTimeData.get(mAccTimeData.size() - 1));
+            }
             mAccData.add(convertedX);
             mAccData.add(convertedY);
             mAccData.add(convertedZ);
@@ -540,7 +555,16 @@ public class DeviceManagerActivity extends AppCompatActivity {
             intarray.add(convertedX);
             intarray.add(convertedY);
             intarray.add(convertedZ);
-            mGyroTimeData.add(Time * mGyroTimeData.size());
+
+            int t = 0;
+            if (mGyroTimeData.isEmpty()){
+                mGyroTimeData.add(0);
+            }else{
+                t = mGyroTimeData.get(mGyroTimeData.size()-1);
+                mGyroTimeData.add(Time + t);
+            }
+
+
             mGyroData.add(convertedX);
             mGyroData.add(convertedY);
             mGyroData.add(convertedZ);
@@ -566,9 +590,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         if ((result & (1L << 15)) != 0){
             result = result & ~(1 << 15);
             return result-32768;
-
         } else{
-
             return result;
         }
 

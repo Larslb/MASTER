@@ -13,10 +13,7 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.larslb.trigger.GraphingActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="ViewFlipper"/>
+
     <ViewFlipper    xmlns:android="http://schemas.android.com/apk/res/android"
         android:orientation="vertical" android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -45,8 +42,25 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textSize="24sp"
-                android:text="Choose form menu to view data"/>
+                android:textSize="20sp"
+                android:text="Choose from menu to view data"/>
+
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="200dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="20dp"
+                android:text="Time distance between shots: "
+                />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="20dp"
+                android:id="@+id/shotsfiredText"/>
         </LinearLayout>
         <LinearLayout
             android:layout_width="match_parent"
@@ -60,7 +74,7 @@
                 android:id="@+id/forceText" />
             <com.github.mikephil.charting.charts.LineChart xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
+                android:layout_height="500dp"
                 android:id="@+id/SingleForceGraph" />
         </LinearLayout>
 
@@ -76,7 +90,7 @@
                 android:id="@+id/accText" />
             <com.github.mikephil.charting.charts.LineChart xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
+                android:layout_height="500dp"
                 android:id="@+id/SingleAccGraph" />
         </LinearLayout>
 
@@ -92,7 +106,7 @@
                 android:id="@+id/gyroText" />
             <com.github.mikephil.charting.charts.LineChart xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="400dp"
+                android:layout_height="500dp"
                 android:id="@+id/SingleGyroGraph" />
         </LinearLayout>
 

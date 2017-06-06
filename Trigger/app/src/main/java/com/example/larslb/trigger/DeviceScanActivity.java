@@ -81,7 +81,6 @@ public class DeviceScanActivity extends ListActivity {
     private String athleteLastName;
     private int athleteId;
     private ScanSettings mSettings;
-    private Handler mHandler;
     private String mdevice;
     private ArrayList<String> mDeviceList = new ArrayList<String>();
     ListView mListView;
@@ -167,7 +166,7 @@ public class DeviceScanActivity extends ListActivity {
                     });
                     builder.show();
                 }
-                return;
+                break;
             }
         }
     }

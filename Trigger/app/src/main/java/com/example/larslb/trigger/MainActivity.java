@@ -63,8 +63,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu){
-        boolean drawerOpen = mDrawerLayout.isDrawerOpen(mDrawerList);
-        //TODO: Implement Menu for drawer
+        mDrawerLayout.isDrawerOpen(mDrawerList);
         return super.onPrepareOptionsMenu(menu);
     }
     @Override

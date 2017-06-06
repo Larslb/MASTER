@@ -146,7 +146,6 @@ public class NewExerciseActivity extends Activity  {
         AthleteData athlete = mAthleteList.get(info.position);
         switch (item.getItemId()){
             case R.id.changeName:
-                //TODO: change name in database
                 break;
             case R.id.delete:
                 mAthleteDB.deleteAthlete(athlete.getId());

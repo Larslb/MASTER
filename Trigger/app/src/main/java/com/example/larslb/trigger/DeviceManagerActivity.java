@@ -100,7 +100,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
 
 
-    private static final int SLEEP_RATE = 5;
+    private static final int SLEEP_RATE = 8;
     private static final int FORCE = 0;
     private static final int ACCELEROMETER = 1;
     private static final int GYROSCOPE = 2;
@@ -162,6 +162,14 @@ public class DeviceManagerActivity extends AppCompatActivity {
     public void onResume(){
         super.onResume();
         Log.d(TAG,"OnResume!");
+        mForceChart = (LineChart) findViewById(R.id.forcegraph);
+        mForceData = new ArrayList<>();
+        mGyroData = new ArrayList<>();
+        mAccData = new ArrayList<>();
+        mForceTimeData = new ArrayList<>();
+        mGyroTimeData = new ArrayList<>();
+        mAccTimeData = new ArrayList<>();
+
         initGraph(mForceChart,false, 300f,-10f, "Force Measurement");
         pThread = new PlottingThread("Plotting Thread");
         pThread.start();
@@ -222,61 +230,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         startActivity(graphingintent);
     }
 
-    /*
-    public ArrayList<Integer> createTimeSet(){
-        Log.d(TAG,"Time Force Size:  " + mForceTimeData.size());
-        Log.d(TAG,"Time Acc Size:  " + mAccTimeData.size());
-        Log.d(TAG,"Time Gyro Size:  " + mGyroTimeData.size());
-        ArrayList<Integer> time;
-        if ((mForceTimeData.size() < mAccTimeData.size()) && mForceTimeData.size() < mGyroTimeData.size()){
-            time = mForceTimeData;
-            shrinkData(time.size(),ACCELEROMETER);
-            shrinkData(time.size(),GYROSCOPE);
-        }
-        else if (mAccTimeData.size() < mGyroTimeData.size()){
-            time = mAccTimeData;
-            shrinkData(time.size(),FORCE);
-            shrinkData(time.size(),GYROSCOPE);
-        }
-        else{
-            time=mGyroTimeData;
-            shrinkData(time.size(),FORCE);
-            shrinkData(time.size(),ACCELEROMETER);
-        }
-        return time;
-    }
 
-    public void shrinkData(int TimeSize,int dataName){
-
-
-        Log.d(TAG,"Data to be shrinked (0 Force, 1 Acc, 2 Gyro) : " + dataName);
-        switch (dataName){
-            case FORCE:
-                int forceIndexSize = mForceData.size() - 1;
-                Log.d(TAG,"ForceIndexSize:      " + forceIndexSize + "  TimeSize:    " + TimeSize);
-                for (int i=forceIndexSize;i<TimeSize;i--){
-                    mForceData.remove(i);
-                }
-                break;
-            case ACCELEROMETER:
-                int accIndexSize = mAccData.size() - 1;
-
-                Log.d(TAG,"AccIndexSize:      " + accIndexSize + "  TimeSize:    " + TimeSize);
-                for (int i=accIndexSize;i<TimeSize;i--){
-                    mAccData.remove(i);
-                }
-                break;
-            case GYROSCOPE:
-                int gyroIndexSize = mGyroData.size() - 1;
-
-                Log.d(TAG,"GyroIndexSize:      " + gyroIndexSize + "  TimeSize:    " + TimeSize);
-                for (int i=gyroIndexSize;i<TimeSize;i--){
-                    mGyroData.remove(i);
-                }
-        }
-
-    }
-*/
 
     public void initGraph(LineChart lineChart,boolean threeAxis, float Ymax, float Ymin, String name){
         lineChart.getDescription().setEnabled(false);
@@ -314,11 +268,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
         Legend l = lineChart.getLegend();
         l.setEnabled(false);
-
-        //l.setForm(Legend.LegendForm.LINE);
-        //l.setTypeface(Typeface.DEFAULT);
-        //l.setTextColor(Color.WHITE);
-
         XAxis xl = lineChart.getXAxis();
         xl.setDrawGridLines(false);
         xl.setAvoidFirstLastClipping(true);
@@ -359,7 +308,6 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
     public void lookupCharacteristics(){
         if (mGattCharacteristics != null) {
-            //final ArrayList<BluetoothGattCharacteristic> characteristics = mGattCharacteristics.get(position);
             mNotifyCharacteristics = new ArrayList<>();
             for (BluetoothGattCharacteristic characteristic : mGattCharacteristics) {
                 final int charaProp = characteristic.getProperties();
@@ -453,32 +401,23 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.ACC_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,14);
-                ArrayList<Integer> array = AccBytearray2intarray(measurement);
+                AccBytearray2intarray(measurement);
 
             }else if (DeviceServices.lookup(id,"unkown").equals(DeviceServices.attributes.get(DeviceServices.GYRO_ATTRIBUTE))){
                 measurement = Arrays.copyOfRange(data,0,14);
                 //Log.d(TAG,"Gyro Raw DaTA:            ---            " +  Arrays.copyOfRange(data,0,14).toString());
-                ArrayList<Integer> array = gyroBytearray2intarray(measurement);
+                gyroBytearray2intarray(measurement);
 
             }
 
         }
     }
     public HashMap<String,ArrayList<Integer>> forceBytearray2intarray(byte[] barray){
-        StringBuilder stringBuilder = new StringBuilder();
         ArrayList<Integer> intarray = new ArrayList<>();
         ArrayList<Integer> timeintArray = new ArrayList<>();
         HashMap<String,ArrayList<Integer>> res = new HashMap<>();
         for (int i=0;i<=barray.length-1;i+=3){
-            /*
-            Log.d(TAG,"Signed Time byte:        ---      " + (barray[i] & 0xFF));
-            mTimeData.add((barray[i] & 0xFF));
-            Log.d(TAG,"Force uint16 byte:       ---         "+ convertToUint16((barray[i+1] & 0xFF), (barray[i+2] & 0xFF)));
-            */
-            /*
-            stringBuilder.append(convertToUint16((barray[i+1] & 0xFF), (barray[i+2] & 0xFF)));
-            stringBuilder.append(",");
-            */
+
             Integer delta_t = (barray[i] & 0xFF);
             timeintArray.add(delta_t);
             if (mForceTimeData.isEmpty()){
@@ -497,24 +436,14 @@ public class DeviceManagerActivity extends AppCompatActivity {
         return res;
     }
 
-    public ArrayList<Integer> AccBytearray2intarray(byte[] barray){
-        StringBuilder stringBuilder = new StringBuilder();
-        ArrayList<Integer> intarray = new ArrayList<>();
+    public void AccBytearray2intarray(byte[] barray){
+
         for (int i=0;i<=barray.length-1;i+=7) {
 
-            /*Log.d(TAG, "x uint16 byte:       ---         " + convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
-            Log.d(TAG, "y uint16 byte:       ---         " + convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
-            Log.d(TAG, "z uint16 byte:       ---         " + convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
-            */
             Integer Time = barray[i] & 0xFF;
             Integer convertedX = convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF));
             Integer convertedY = convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF));
             Integer convertedZ = convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF));
-            intarray.add(convertedX);
-            intarray.add(convertedY);
-            intarray.add(convertedZ);
-
-
 
             if (mAccTimeData.isEmpty()){
                 mAccTimeData.add(0);
@@ -525,37 +454,19 @@ public class DeviceManagerActivity extends AppCompatActivity {
             mAccData.add(convertedY);
             mAccData.add(convertedZ);
 
-            /*
-            stringBuilder.append(convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
-            stringBuilder.append(",");
-            stringBuilder.append(convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
-            stringBuilder.append(",");
-            stringBuilder.append(convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
-            stringBuilder.append(",");
-            */
-
 
         }
-        return intarray;
+
     }
 
-    public ArrayList<Integer> gyroBytearray2intarray(byte[] barray){
-        StringBuilder stringBuilder = new StringBuilder();
-        ArrayList<Integer> intarray = new ArrayList<>();
+    public void gyroBytearray2intarray(byte[] barray){
+
         for (int i=0;i<=barray.length-1;i+=7) {
 
-            /*Log.d(TAG, "x uint16 byte:       ---         " + convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
-            Log.d(TAG, "y uint16 byte:       ---         " + convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
-            Log.d(TAG, "z uint16 byte:       ---         " + convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
-            */
             Integer Time = barray[i] & 0xFF;
             Integer convertedX = convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF));
             Integer convertedY = convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF));
             Integer convertedZ = convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF));
-            intarray.add(convertedX);
-            intarray.add(convertedY);
-            intarray.add(convertedZ);
-
             int t = 0;
             if (mGyroTimeData.isEmpty()){
                 mGyroTimeData.add(0);
@@ -569,18 +480,9 @@ public class DeviceManagerActivity extends AppCompatActivity {
             mGyroData.add(convertedY);
             mGyroData.add(convertedZ);
 
-            /*
-            stringBuilder.append(convertToUint16((barray[i + 1] & 0xFF), (barray[i + 2] & 0xFF)));
-            stringBuilder.append(",");
-            stringBuilder.append(convertToUint16((barray[i + 3] & 0xFF), (barray[i + 4] & 0xFF)));
-            stringBuilder.append(",");
-            stringBuilder.append(convertToUint16((barray[i + 5] & 0xFF), (barray[i + 6] & 0xFF)));
-            stringBuilder.append(",");
-            */
 
 
         }
-        return intarray;
     }
 
     public int convertToUint16(int dataFirst, int dataSecond){
@@ -606,13 +508,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(mGattUpdateReciever, makeGattUpdateIntentFilter());
 
 
-        mForceChart = (LineChart) findViewById(R.id.forcegraph);
-        mForceData = new ArrayList<>();
-        mGyroData = new ArrayList<>();
-        mAccData = new ArrayList<>();
-        mForceTimeData = new ArrayList<>();
-        mGyroTimeData = new ArrayList<>();
-        mAccTimeData = new ArrayList<>();
+
     }
     @Override
     protected void onDestroy(){
@@ -722,7 +618,7 @@ public class DeviceManagerActivity extends AppCompatActivity {
 
 
 
-    class PlottingThread extends Thread {
+    private class PlottingThread extends Thread {
         private Thread t;
         private String threadName;
         private int mode;

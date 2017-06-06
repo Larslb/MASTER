@@ -1,9 +1,6 @@
 package com.example.larslb.trigger;
 
-import android.app.Activity;
-import android.content.ContextWrapper;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Environment;
@@ -12,48 +9,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.sql.Date;
 import java.text.DateFormat;
-import java.text.FieldPosition;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.lang.Math;
-
-
-import android.app.Fragment;
-import android.content.Context;
 import android.graphics.Color;
-import android.os.Bundle;
-import android.os.DropBoxManager;
-import android.provider.ContactsContract;
-import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.graphics.Color;
-import android.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewFlipper;
 
@@ -72,13 +39,10 @@ import com.github.mikephil.charting.utils.ColorTemplate;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static android.R.attr.max;
-import static android.R.attr.theme;
-import static android.R.attr.x;
+
 
 public class GraphingActivity extends AppCompatActivity {
     private static final String TAG = GraphingActivity.class.getSimpleName();
@@ -98,12 +62,9 @@ public class GraphingActivity extends AppCompatActivity {
     HashMap<String,ArrayList<Integer>> mGyroDataList;
     HashMap<String,ArrayList<Integer>> mAccDataList;
     ArrayList<Integer> mShotsFired;
-    ArrayList<Integer> mAccTime;
-    ArrayList<Integer> mGyroTime;
-    ArrayList<Integer> mFiredShots;
+    ArrayList<Integer> mDerivZData;
 
     private int mAthleteDataId;
-    private int mShootingCounter = 0;
     private boolean mEnableSave;
 
     LineChart mForceGraph;
@@ -118,6 +79,7 @@ public class GraphingActivity extends AppCompatActivity {
     public static final String GYRO_TIME_TEXT = "GYRO_TIME";
     public static final String ENABLE_SAVE = "ENABLE_SAVE";
     public static final String SHOT_LINES = "SHOT_LINES";
+    public static final String DERIVDATA_TEXT = "DERIVDATA";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,7 +89,7 @@ public class GraphingActivity extends AppCompatActivity {
         mForceDataList = new HashMap<>();
         mAccDataList = new HashMap<>();
         mGyroDataList = new HashMap<>();
-
+        mDerivZData = new ArrayList<>();
 
 
         mDBAthlete = new DBHelper(this);
@@ -180,13 +142,10 @@ public class GraphingActivity extends AppCompatActivity {
         CreateView(mForceGraph,300f,-10f, "Force Measurement");
         CreateView(mAccGraph, 33500f,-33500f, "Accelerometer Measurement");
         CreateView(mGyroGraph, 33500f,-33500f, "Gyroscope Measurement");
-        mShootingCounter ++;
-        //printData();
 
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
-        Log.d(TAG, "Enable Save mode:   " + mEnableSave);
         if (mEnableSave) getMenuInflater().inflate(R.menu.plottingmenu,menu);
         else getMenuInflater().inflate(R.menu.plottingmenu_without_save,menu);
         return super.onCreateOptionsMenu(menu);
@@ -222,19 +181,6 @@ public class GraphingActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void printData(){
-        Log.d(TAG,"Data in stock:   \n");
-        Log.d(TAG," ------------------------------  \n");
-        Log.d(TAG," ------------------------------  \n");
-        Log.d(TAG,FORCE_TEXT + ":   " + mForceDataList.get(FORCE_TEXT) + "\n");
-        Log.d(TAG,FORCE_TIME_TEXT + ":      " + mForceDataList.get(FORCE_TIME_TEXT) + "\n");
-        Log.d(TAG,ACCELEROMETER_TEXT + ":       " + mAccDataList.get(ACCELEROMETER_TEXT) + "\n");
-        Log.d(TAG,ACC_TIME_TEXT + ":            " + mAccDataList.get(ACC_TIME_TEXT) + "\n");
-        Log.d(TAG,GYROSCOPE_TEXT + ":           " + mGyroDataList.get(GYROSCOPE_TEXT) + "\n");
-        Log.d(TAG,GYRO_TIME_TEXT + ":           " + mGyroDataList.get(GYRO_TIME_TEXT) + "\n");
-        Log.d(TAG," ------------------------------  \n");
-
-    }
 
     public String shotStringmaker(){
         StringBuilder resString = new StringBuilder();
@@ -250,7 +196,7 @@ public class GraphingActivity extends AppCompatActivity {
         return resString.toString();
     }
 
-    public ArrayList<Integer> derivate(ArrayList<Integer> data, int deltaT){
+    public ArrayList<Integer> derivate(List<Integer> data, int deltaT){
         ArrayList<Integer> derivData = new ArrayList<>();
         for (int i =0;i<data.size()-1;i++){
             derivData.add((data.get(i+1) - data.get(i))/deltaT);
@@ -262,112 +208,56 @@ public class GraphingActivity extends AppCompatActivity {
         ArrayList<Integer> candidatesForceTimeStamp = new ArrayList<>();
         ArrayList<Integer> firedShots = new ArrayList<>();
         ArrayList<Integer> ForceDataOver150 = new ArrayList<>();
-        ArrayList<ArrayList<Integer>> intervalTimeShots = new ArrayList<>();
+        ArrayList<ArrayList<Integer>> intervalData = new ArrayList<>();
         List<Integer> zAxisData = convertToXYZData(mAccDataList.get(ACCELEROMETER_TEXT)).get(2);
         ArrayList<Integer> zTimeData = mAccDataList.get(ACC_TIME_TEXT);
+        mDerivZData = derivate(zAxisData,zTimeData.get(1) - zTimeData.get(0));
+
 
         for (int i=0;i<mForceDataList.get(FORCE_TEXT).size();i++){
-            if (mForceDataList.get(FORCE_TEXT).get(i) > 150){
-                ForceDataOver150.add(mForceDataList.get(FORCE_TEXT).get(i));
+            if (mForceDataList.get(FORCE_TEXT).get(i) > 100){
                 candidatesForceTimeStamp.add(mForceDataList.get(FORCE_TIME_TEXT).get(i));
             }
         }
 
-
-        Log.d(TAG,"Force data:     " +  ForceDataOver150);
-        Log.d(TAG,"Force Time stamps:   " +candidatesForceTimeStamp);
-
-        ArrayList<Integer> intervalTime = new ArrayList<>();
+        ArrayList<Integer> interval = new ArrayList<>();
         for (int t=0;t< candidatesForceTimeStamp.size()-1;t++){
             int t_0 = candidatesForceTimeStamp.get(t);
             int t_1 = candidatesForceTimeStamp.get(t+1);
 
             if ((t_1 - t_0) < 11 ){
-                if (!intervalTime.contains(t_0) ){
-                        intervalTime.add(t_0);
+                if (!interval.contains(t_0) ){
+                    interval.add(t_0);
                     }
-                    if(!intervalTime.contains(t_1)){
-                        intervalTime.add(t_1);
-                    }
+                if(!interval.contains(t_1)){
+                    interval.add(t_1);
+                }
             }else{
-                intervalTimeShots.add(intervalTime);
-                intervalTime = new ArrayList<>();
+                intervalData.add(interval);
+                interval = new ArrayList<>();
             }
         }
-        intervalTimeShots.add(intervalTime);
-        Log.d(TAG,"Intevals:    " + intervalTimeShots.size());
-
-        for (ArrayList<Integer> interval : intervalTimeShots) {
+        intervalData.add(interval);
+        for (ArrayList<Integer> inter : intervalData) {
             int timeMinAcc = 0;
-            if (!interval.isEmpty()) {
-                for (int t = interval.get(0); t < interval.get(interval.size() - 1); t++) {
-                    int minAccData = 0;
-                    int accZIndex = zTimeData.indexOf(t);
+            if (!inter.isEmpty()) {
+                int minAccData = -50;
+                for (int t = inter.get(0); t < inter.get(inter.size() - 1); t++) {
+                    int accZIndex = zTimeData.indexOf(t) - 1;
                     if (accZIndex > 0) {
-                        if ((zAxisData.get(accZIndex) < -1500) && (zAxisData.get(accZIndex) < minAccData)) {
-                            minAccData = zAxisData.get(accZIndex);
+                        if (mDerivZData.get(accZIndex) < minAccData) {
+                            minAccData = mDerivZData.get(accZIndex);
                             timeMinAcc = t;
                         }
                     }
                 }
-                if (!firedShots.contains(timeMinAcc) || timeMinAcc != 0)
+                if (!firedShots.contains(timeMinAcc) && timeMinAcc != 0)
                     firedShots.add(timeMinAcc);
             }
         }
-
-        Log.d(TAG,"FiredShots at:  " + firedShots);
-                /*
-        Log.d(TAG,"zData:   " + zAxisData);
-        Log.d(TAG,"zTimeData:   " + zTimeData);
-        for (int z : zAxisData){
-            if (z < -1500){
-                candidatesForceTimeStamp.add(zAxisData.indexOf(z)*10);
-                candidatesAccTimeStamp.add(zAxisData.indexOf(z) *11);
-            }
-        }
-        Log.d(TAG,"TimeStamp for Force Candidates:        " + candidatesForceTimeStamp);
-        Log.d(TAG,"TimeStamp for Acc Candidates:        " + candidatesAccTimeStamp);
-        Log.d(TAG,"ForceTimeData   :            " + mForceDataList.get(FORCE_TIME_TEXT) );
-        for (int timeStamp = 0; timeStamp<candidatesForceTimeStamp.size()-1;timeStamp ++){
-            int forceIndex = mForceDataList.get(FORCE_TIME_TEXT).indexOf(candidatesForceTimeStamp.get(timeStamp));
-            if (mForceDataList.get(FORCE_TEXT).get(forceIndex) > 150){
-                firedShots.add(timeStamp);
-            }
-        }
-
-        for (int t = 0; t<firedShots.size()-1;t++){
-            if (firedShots.get(t+1) - firedShots.get(t) < 2000){
-                int index_T1 = zTimeData.indexOf(firedShots.get(t+1));
-                int index_T0 = zTimeData.indexOf(firedShots.get(t));
-
-                if (zAxisData.get(index_T0) < zAxisData.get(index_T1)){
-                    firedShots.remove(t);
-                }
-            }
-        }
-        Log.d(TAG,"FiredShots   " + firedShots);
-        */
-
         return firedShots;
     }
 
-    public ArrayList<Integer> demux(ArrayList<Integer> ShotFiredTimeStamps){
-        ArrayList<Integer> shortedShots = new ArrayList<>();
-        int minAcc = 0;
-        for (int i=0;i<ShotFiredTimeStamps.size()-1;i++){
-            int t_1 = ShotFiredTimeStamps.get(i+1);
-            int t_0 = ShotFiredTimeStamps.get(i);
-            if (ShotFiredTimeStamps.get(i+1) -  ShotFiredTimeStamps.get(i) < 2000){
-
-                int min = Math.min(mAccDataList.get(ACCELEROMETER_TEXT).get(ShotFiredTimeStamps.get(i+1)),
-                        mAccDataList.get(ACCELEROMETER_TEXT).get(ShotFiredTimeStamps.get(i)));
-                if (min < minAcc){
-                    minAcc = min;
-                }
-            }
-        }
-        return shortedShots;
-    }
     public void setShotDetection(LineChart Chart){
         if (mShotsFired.size() > 0) {
             XAxis leftAxis = Chart.getXAxis();
@@ -398,10 +288,6 @@ public class GraphingActivity extends AppCompatActivity {
 
     public void createSingleForceView(){
         List<Entry> forceData = new ArrayList<>();
-        List<Float> measurementData = new ArrayList<>();
-
-        Log.d(TAG,"ForceData:   " + mForceDataList.get(FORCE_TEXT));
-        Log.d(TAG,"ForceTimeData:   " + mForceDataList.get(FORCE_TIME_TEXT));
 
         for (int i=0;i<mForceDataList.get(FORCE_TIME_TEXT).size()-1;i++){
             forceData.add(new Entry(mForceDataList.get(FORCE_TIME_TEXT).get(i),mForceDataList.get(FORCE_TEXT).get(i)));
@@ -434,8 +320,6 @@ public class GraphingActivity extends AppCompatActivity {
         List<Entry> zAxisData = new ArrayList<>();
 
 
-        Log.d(TAG,"ACC size: " + mAccDataList.size());
-        Log.d(TAG,"ACCTIme size:  " + mAccDataList.get(ACC_TIME_TEXT).size());
         for (int i =0;i<Zdata.size()-1;i++){
             Entry xEntry = new Entry(mAccDataList.get(ACC_TIME_TEXT).get(i),Xdata.get(i));
             Entry yEntry = new Entry(mAccDataList.get(ACC_TIME_TEXT).get(i),Ydata.get(i));
@@ -486,8 +370,7 @@ public class GraphingActivity extends AppCompatActivity {
         List<Entry> yAxisData = new ArrayList<>();
         List<Entry> zAxisData = new ArrayList<>();
 
-        Log.d(TAG,"GyroData Size: " + mGyroDataList.size());
-        Log.d(TAG,"Gyro Time Size: " + mGyroDataList.get(GYRO_TIME_TEXT).size());
+
         for (int i =0;i<Xdata.size()-1;i++){
             Entry xEntry = new Entry(time.get(i),Xdata.get(i));
             Entry yEntry = new Entry(time.get(i),Ydata.get(i));
@@ -525,10 +408,7 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
     public boolean saveToDataBase(){
-        if (mAthleteFirstName.equals("Test")){
-            Log.d(TAG,"TEST is not part of DB");
-            return false;
-        }
+
 
         JSONObject jsonObject = makeJSONObject();
         ShootingData shooting = new ShootingData();
@@ -550,14 +430,12 @@ public class GraphingActivity extends AppCompatActivity {
     public String saveFile(JSONObject jsonObject,String date, String description){
         String filename =  mAthleteFirstName + mAthleteSurName + description + date + ".txt";
         String directoryName = mAthleteFirstName + mAthleteSurName;
-        Log.w(TAG,"IsExternalStorageWritable?   " + isExternalStorageWritable());
         File dir;
         if (isExternalStorageWritable()) {
             dir = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),directoryName);
             if (!dir.mkdir()){
                 Log.e(TAG,"directory not created");
             }
-            Log.d(TAG,"root path    -----       " + dir.getPath());
 
         }else {
             Toast toast = Toast.makeText(getApplicationContext(),"External Storage not writeable, saving to Internal memory",Toast.LENGTH_LONG);
@@ -567,14 +445,8 @@ public class GraphingActivity extends AppCompatActivity {
 
         File file = new File(dir, filename);
         if(file.exists()) file.delete();
-        Log.d(TAG,"Saving file : " + filename + "\n" +
-            " to Path: " + file.getAbsolutePath());
 
 
-        File listFile = getFilesDir();
-        for (File f : listFile.listFiles()){
-            Log.d(TAG,"File in filesdir:    " + f.toString());
-        }
         try {
             file.createNewFile();
             FileOutputStream f = new FileOutputStream(file);
@@ -597,15 +469,6 @@ public class GraphingActivity extends AppCompatActivity {
         return false;
     }
 
-    public File getExternalStorageDir(String fileName){
-        File file = new File(getApplicationContext().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS),fileName);
-        if (!file.mkdir()){
-            Log.e(TAG,"Directory not created!");
-
-        }
-
-        return file;
-    }
 
     public JSONObject makeJSONObject(){
         JSONObject jsonObject = new JSONObject();
@@ -617,13 +480,13 @@ public class GraphingActivity extends AppCompatActivity {
             jsonObject.put(ACC_TIME_TEXT,mAccDataList.get(ACC_TIME_TEXT).toString() + "\n");
             jsonObject.put(GYROSCOPE_TEXT,mGyroDataList.get(GYROSCOPE_TEXT).toString() + "\n");
             jsonObject.put(GYRO_TIME_TEXT,mGyroDataList.get(GYRO_TIME_TEXT).toString() + "\n");
+            jsonObject.put(DERIVDATA_TEXT,mDerivZData.toString() + "\n");
             jsonObject.put(SHOT_LINES,mShotsFired.toString() + "\n");
 
         }catch (JSONException e){
             e.printStackTrace();
 
         }
-        Log.d(TAG,"JSON object to be stored: " + jsonObject.toString());
         return jsonObject;
     }
 
@@ -661,20 +524,5 @@ public class GraphingActivity extends AppCompatActivity {
     }
 
 
-    private ILineDataSet createSet(String name){
-
-        LineDataSet set = new LineDataSet(null, name);
-        set.setAxisDependency(YAxis.AxisDependency.LEFT);
-        set.setColor(ColorTemplate.getHoloBlue());
-        set.setLineWidth(2f);
-        set.setDrawFilled(true);
-        set.setCircleRadius(1f);
-        set.setFillAlpha(65);
-        set.setFillColor(ColorTemplate.getHoloBlue());
-        set.setHighLightColor(Color.rgb(244, 117, 117));
-
-        set.setDrawValues(false);
-        return set;
-    }
 
 }

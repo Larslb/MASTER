@@ -31,7 +31,6 @@ public class BLEConnectService extends Service {
     private final IBinder mBinder = new LocalBinder();
     private int mConnected = STATE_DISCONNECTED;
     private String mDeviceAddress;
-    private BluetoothGattCharacteristic mCharacteristic;
 
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
@@ -58,25 +57,23 @@ public class BLEConnectService extends Service {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-            if (newState == BluetoothProfile.STATE_CONNECTED){
-                final Intent connectIntent = new Intent(ACTION_GATT_CONNECTED);
-                broadCastUpdate(connectIntent);
-                mGatt.discoverServices();
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED){
-                final Intent disconnectIntent = new Intent(ACTION_GATT_DISCONNECTED);
-                broadCastUpdate(disconnectIntent);
-                mConnected = STATE_DISCONNECTED;
-                try {
-                    mGatt.close();
-                } catch (Exception e){
-                    Log.d(TAG,"Close ignoring: " + e);
-                }
+            switch (newState) {
+                case BluetoothProfile.STATE_CONNECTED:
+                    final Intent connectIntent = new Intent(ACTION_GATT_CONNECTED);
+                    broadCastUpdate(connectIntent);
+                    mConnected = STATE_CONNECTED;
+                    mGatt.discoverServices();
+                    break;
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    final Intent disconnectIntent = new Intent(ACTION_GATT_DISCONNECTED);
+                    broadCastUpdate(disconnectIntent);
+                    mConnected = STATE_DISCONNECTED;
+                    break;
             }
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status){
-            Log.d(TAG,"onServicesDiscovered: Status Flag = " + status);
             if (status == BluetoothGatt.GATT_SUCCESS){
                 final Intent intent = new Intent(ACTION_GATT_SERVICES_DISCOVERED);
                 broadCastUpdate(intent);
@@ -85,13 +82,6 @@ public class BLEConnectService extends Service {
             }
         }
 
-        @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
-            Log.d(TAG,"onCharacteristicRead: Status Flag = " + status);
-            if (status == BluetoothGatt.GATT_SUCCESS){
-                broadCastUpdate(ACTION_DATA_AVAILABLE,characteristic);
-            }
-        }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
@@ -100,8 +90,6 @@ public class BLEConnectService extends Service {
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status){
-            Log.d(TAG, "onDescriptorWrite --> Status: " + status);
-
         }
     };
 
@@ -117,7 +105,7 @@ public class BLEConnectService extends Service {
             intent.putExtra(SERVICE_DATA,data);
 
         }else{
-            Log.d(TAG, "ERROR:          -           data == null!!");
+            Log.e(TAG, "ERROR:          -           data == null!!");
         }
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
@@ -128,6 +116,15 @@ public class BLEConnectService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent){
+        if (mGatt != null) {
+            mGatt.close();
+            mGatt = null;
+        }
+        return super.onUnbind(intent);
     }
 
     public class LocalBinder extends Binder {
@@ -160,12 +157,11 @@ public class BLEConnectService extends Service {
                 mConnected = STATE_CONNECTED;
                 return true;
             }else{
-                Log.d(TAG,"mGatt not able to connect to adress");
+                Log.e(TAG,"mGatt not able to connect to adress");
                 return false;
             }
         }
         final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
-        Log.d(TAG,"Device TO connect: " + device.getName());
         if (device == null){
             return false;
         }
@@ -188,7 +184,6 @@ public class BLEConnectService extends Service {
 
     public void readCharacteristic(BluetoothGattCharacteristic characteristic){
         if (mBluetoothAdapter == null || mGatt == null){
-            Log.w(TAG, "BluetoothAdapter not Initialized");
             return;
         }
         mGatt.readCharacteristic(characteristic);
@@ -199,17 +194,8 @@ public class BLEConnectService extends Service {
             Log.w(TAG, "BluetoothAdapter not Initialized");
             return;
         }
-        mCharacteristic = characteristic;
-
         final BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(DeviceServices.CLIENT_CHARACTERISTIC_CONFIG));
-        Log.d(TAG,"BluetoothDescriptor " + descriptor.getUuid().toString());
-
-        Log.d(TAG,"Characteristic UUID --> " + characteristic.getUuid().toString());
-
-
         mGatt.setCharacteristicNotification(characteristic,enabled);
-
-        Log.d(TAG,"Descriptor: " + descriptor.getUuid().toString());
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         new Thread(new Runnable() {
             @Override

@@ -103,7 +103,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
         String getQuery = "SELECT * FROM " + AthleteData.TABLE_NAME + " WHERE " +
                 AthleteData.COLUMN_ID +  " = " + AthleteId;
-        Log.d(TAG,"get AthleteData Query: " + getQuery);
         Cursor cursor = db.rawQuery(getQuery,null);
 
         if (cursor != null){
@@ -124,8 +123,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public ArrayList<AthleteData> getAllAthletes() {
         ArrayList<AthleteData> list = new ArrayList<>();
         String getAllQuery = "SELECT * FROM " + AthleteData.TABLE_NAME;
-
-        Log.d(TAG,"get all athletes Query: " + getAllQuery);
 
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(getAllQuery,null);
@@ -259,8 +256,6 @@ public class DBHelper extends SQLiteOpenHelper {
         String selectAllFromOneQuery = "SELECT * FROM " + ShootingData.TABLE_NAME + " WHERE " +
                 ShootingData.COLUMN_ATHLETEID + " = " + AthleteId;
 
-        Log.d(TAG,"Select All Shootings From Athlete Query : " + selectAllFromOneQuery);
-
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectAllFromOneQuery,null);
 
@@ -302,7 +297,6 @@ public class DBHelper extends SQLiteOpenHelper {
         while (cursor.moveToNext()){
             String[] columnNames = cursor.getColumnNames();
             for (String name : columnNames){
-                //Log.d(TAG,"Column : " + name + "    Data: " + cursor.getString(cursor.getColumnIndex(name)));
                 tableString += String.format("%s: %s\n", name, cursor.getString(cursor.getColumnIndex(name)));
             }
             tableString += "\n";
@@ -319,7 +313,6 @@ public class DBHelper extends SQLiteOpenHelper {
         while (cursor.moveToNext()){
             String[] columnNames = cursor.getColumnNames();
             for (String name : columnNames){
-                //Log.d(TAG,"Column : " + name + "    Data: " + cursor.getString(cursor.getColumnIndex(name)));
                 tableString += String.format("%s: %s\n", name, cursor.getString(cursor.getColumnIndex(name)));
             }
             tableString += "\n";
